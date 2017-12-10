@@ -1,0 +1,251 @@
+     1	package TJasn.virtualMachine;
+     2	
+     3	import TJasn.TJ;
+     4	import TJasn.OutputFileHandler;
+     5	import TJasn.ParserAndTranslator;
+     6	import TJasn.virtualMachine.VirtualMachineHaltException;
+     7	import java.util.Scanner;
+     8	
+     9	
+    10	public final class CodeInterpreter {
+    11	
+    12	  static final int POINTERTAG = 0x7FFF0000;
+    13	
+    14	  static int FP = TJ.DATA_MEMORY_SIZE + POINTERTAG;
+    15	  static int ASP;   // initialized within InterpretCode()
+    16	  static int PC = 0;
+    17	  static Instruction IR;
+    18	  static int ESP = 0;
+    19	  static final int EXPRSTACK[] = new int [TJ.EXPRSTACK_SIZE];
+    20	
+    21	  static int HP = TJ.HEAP_START + POINTERTAG;
+    22	  static int HMAX = TJ.HEAP_MID + POINTERTAG;
+    23	
+    24	  static Scanner input = new Scanner(System.in);
+    25	
+    26	  private static final int UNUSED = -1;
+    27	  private static int minNumInstructionsBeforeDebuggingStop = UNUSED;
+    28	  private static boolean debuggingStoppable = false;
+    29	  private static String instrToStopAt;
+    30	  private static int oldPC = UNUSED;
+    31	  private static int instrCount = 0;
+    32	  private static boolean dumpRequested;
+    33	  public static boolean getDumpRequested() {
+    34	    return dumpRequested;
+    35	  }
+    36	
+    37	  private static String[] instrList =
+    38	     { "ADD", "ADDTOPTR", "AND", "CALLSTATMETHOD", "CHANGESIGN",
+    39	       "DISCARDVALUE", "DIV", "EQ", "GE", "GT", "HEAPALLOC",
+    40	       "INITSTKFRM", "JUMP", "JUMPONFALSE", "LE", "LOADFROMADDR", "LT",
+    41	       "MOD", "MUL", "NE", "NOP", "NOT", "OR", "PASSPARAM", "PUSHLOCADDR",
+    42	       "PUSHNUM", "PUSHSTATADDR", "READINT", "RETURN", "SAVETOADDR",
+    43	       "STOP", "SUB", "WRITEINT", "WRITELNOP", "WRITESTRING", "*"
+    44	     };
+    45	
+    46	
+    47	
+    48	  public static void interpretCode() throws VirtualMachineHaltException
+    49	  {
+    50	    /* Fetch and execute instructions */
+    51	
+    52	    System.out.print("\n\n****** Execution begins ...\n");
+    53	
+    54	    ASP = TJ.staticTab.getNextOffset() + POINTERTAG;
+    55	    while (true) {
+    56	      if (debuggingStoppable
+    57	            && instrCount >= minNumInstructionsBeforeDebuggingStop - 1
+    58	            && (instrToStopAt.equals("*")
+    59	                  || TJ.generatedCode.get(PC).operationName.equals(instrToStopAt))) {
+    60	         if ((minNumInstructionsBeforeDebuggingStop == 0) && instrToStopAt.equals("*"))
+    61	            return;
+    62	         else {
+    63	           dump();
+    64	           IR = TJ.generatedCode.get(oldPC = PC++);
+    65	           instrCount++;
+    66	           IR.execute();
+    67	           TJ.output.getOutFileWriter().println("\n\n\n****** Debugging Stop ******");
+    68	         }
+    69	         return;
+    70	      }
+    71	      else {
+    72	
+    73	        // fetch and execute the next instruction
+    74	
+    75	        IR = TJ.generatedCode.get(oldPC = PC++);
+    76	        instrCount++;
+    77	        IR.execute();  // NOTE: execution of a STOPinstr will terminate the program!
+    78	      }
+    79	    }
+    80	  }
+    81	
+    82	
+    83	
+    84	  public static void dump()
+    85	  {
+    86	      TJ.output.getOutFileWriter().print("\n\n\nData memory dump\n\n");
+    87	
+    88	      TJ.output.getOutFileWriter().println
+    89	          ("  Data memory--addresses 0 to top of stack, and allocated heap locations:");
+    90	
+    91	      int heapBase = (HMAX - POINTERTAG == TJ.HEAP_MID) ? TJ.HEAP_START : TJ.HEAP_MID;
+    92	      int heapTop  = HP - POINTERTAG - 1;
+    93	
+    94	      for (int i = 0; i <= heapTop; i++) {
+    95	
+    96	          if (i == ASP - POINTERTAG) {
+    97	            i = heapBase - 1;
+    98	            continue;
+    99	          }
+   100	
+   101	          int d = TJ.data[i];
+   102	
+   103	          TJ.output.getOutFileWriter().print("  " + i + ": " + d);
+   104	
+   105	          if (d >= POINTERTAG)
+   106	            TJ.output.getOutFileWriter().println(" = POINTER TO " + (d - POINTERTAG));
+   107	
+   108	          else if (d > 127 || d < 0)  /* non-ASCII character */
+   109	            TJ.output.getOutFileWriter().println();
+   110	
+   111	          else if (d == 127)
+   112	            TJ.output.getOutFileWriter().println(" = DEL");
+   113	
+   114	          else if (d >= (int)' ') /* printable ASCII character */
+   115	            TJ.output.getOutFileWriter().println(" = '" + (char) d + "'");
+   116	
+   117	          else                    /* ASCII control character */
+   118	            TJ.output.getOutFileWriter().println(" = Ctrl-" + (char) (d + 64));
+   119	      }
+   120	
+   121	      TJ.output.getOutFileWriter().println();
+   122	
+   123	      TJ.output.getOutFileWriter().print("  PC=" + PC + "  ESP=" + ESP);
+   124	
+   125	      TJ.output.getOutFileWriter().print("  FP=");
+   126	      if (FP == TJ.DATA_MEMORY_SIZE + POINTERTAG)
+   127	        TJ.output.getOutFileWriter().print("<not in use>");
+   128	      else
+   129	        TJ.output.getOutFileWriter().print(" POINTER TO " + (FP - POINTERTAG));
+   130	
+   131	      TJ.output.getOutFileWriter().println("  ASP= POINTER TO " + (ASP - POINTERTAG)
+   132	                             + "\n  HP= POINTER TO " + (HP - POINTERTAG)
+   133	                             + "  HMAX= POINTER TO " + (HMAX - POINTERTAG));
+   134	
+   135	      if (oldPC != UNUSED) {
+   136	        TJ.output.getOutFileWriter().print
+   137	              ("\n  Total number of instructions executed: ");
+   138	        TJ.output.getOutFileWriter().println(instrCount);
+   139	        TJ.output.getOutFileWriter().print("  Last instruction to be executed: ");
+   140	        TJ.generatedCode.get(oldPC).writeInstr();
+   141	      }
+   142	      else
+   143	        TJ.output.getOutFileWriter().println("\n  No instructions executed.");
+   144	
+   145	      TJ.output.getOutFileWriter().println();
+   146	
+   147	      TJ.output.getOutFileWriter().print("  Expression evaluation stack:");
+   148	      if (ESP == 0)
+   149	        TJ.output.getOutFileWriter().print(" <empty>");
+   150	      TJ.output.getOutFileWriter().println();
+   151	      for (int i = ESP - 1; i >= 0; i--) {
+   152	        int d = EXPRSTACK[i];
+   153	        TJ.output.getOutFileWriter().print("  " + i+ ": " + d);
+   154	        if (d >= POINTERTAG)
+   155	            TJ.output.getOutFileWriter().println(" = POINTER TO " + (d - POINTERTAG));
+   156	        else
+   157	            TJ.output.getOutFileWriter().println();
+   158	      }
+   159	      TJ.output.getOutFileWriter().println();
+   160	  }
+   161	
+   162	
+   163	  static void setDebuggingStopOrDump () throws VirtualMachineHaltException
+   164	  {
+   165	        System.out.print("\nWant debugging stop or post-execution dump? (y/n) ");
+   166	
+   167	        String response;
+   168	
+   169	        while (true) {
+   170	            System.out.flush();
+   171	            response = input.nextLine();
+   172	            if (!(response.equalsIgnoreCase("y") || response.equalsIgnoreCase("yes")
+   173	                     || response.equalsIgnoreCase("n") || response.equalsIgnoreCase("no"))) {
+   174	              System.out.println("Invalid response!");
+   175	              System.out.print("\nWant debugging stop or post-execution dump? (y/n) ");
+   176	            }
+   177	            else break;
+   178	        }
+   179	
+   180	        if (   response.equalsIgnoreCase("y")
+   181	            || response.equalsIgnoreCase("yes")) {
+   182	
+   183	          dumpRequested = true;
+   184	
+   185	          System.out.print
+   186	            ("Enter MINIMUM no. of instructions to execute before debugging stop.\n"
+   187	              +"(Enter -1 to get a post-excution dump but no debugging stop.): ");
+   188	          System.out.flush();
+   189	
+   190	          try {
+   191	              minNumInstructionsBeforeDebuggingStop = input.nextInt();
+   192	              input.nextLine();
+   193	
+   194	              if ((minNumInstructionsBeforeDebuggingStop) >= 0) {
+   195	
+   196	                debuggingStoppable = true;
+   197	
+   198	                readInstr:
+   199	                  while (true) {
+   200	                    System.out.print
+   201	                      ("Stop after executing what instruction? (e.g., PUSHNUM)\n"
+   202	                         + "(Enter * to stop after executing just "
+   203	                         + minNumInstructionsBeforeDebuggingStop + " instructions.): ");
+   204	                    System.out.flush();
+   205	
+   206	                    instrToStopAt = (input.nextLine()).toUpperCase();
+   207	
+   208	                    for (int i = 0; i < instrList.length; i++)
+   209	                      if (instrList[i].equals(instrToStopAt))
+   210	                        break readInstr;
+   211	
+   212	                    System.out.println("\"" + instrToStopAt
+   213	                                       + "\" is not a TinyJ virtual machine instruction name!\n");
+   214	                  }
+   215	              }
+   216	              else System.out.println("\nNo debugging stop.");
+   217	
+   218	          } catch (NumberFormatException e) {
+   219	             throw new VirtualMachineHaltException("RUNTIME ERROR: Bad integer input");
+   220	          }
+   221	
+   222	          System.out.println();
+   223	        }
+   224	        else {
+   225	          dumpRequested = false;
+   226	          minNumInstructionsBeforeDebuggingStop = UNUSED;
+   227	        }
+   228	  }
+   229	
+   230	
+   231	  public static void start() throws VirtualMachineHaltException
+   232	  {
+   233	    if (Instruction.demoClassCount != 0) {
+   234	      System.out.println("\nUsing the following DEMO instruction classes:");
+   235	      for (int i = 0; i < Instruction.demoClassCount; i++)
+   236	        System.out.print(Instruction.demoClasses[i]+" ");
+   237	      System.out.println();
+   238	    }
+   239	
+   240	    setDebuggingStopOrDump();
+   241	
+   242	    /* Write out all generated instructions, then execute them */
+   243	    TJ.output.getOutFileWriter().print("\n\n\nInstructions Generated:\n\n");
+   244	    for (int addr = 0; addr < TJ.generatedCode.size(); addr++)
+   245	      TJ.generatedCode.get(addr).writeInstr();
+   246	
+   247	    interpretCode();
+   248	  }
+   249	}
+   250	
+   251	

@@ -1,0 +1,23 @@
+     1	package TJasn.virtualMachine;
+     2	
+     3	import TJasn.TJ;
+     4	
+     5	abstract public class TwoOperandInstruction extends Instruction {
+     6	
+     7	  int firstOperand, secondOperand;
+     8	
+     9	  final void writeInstr()
+    10	  {
+    11	    TJ.output.getOutFileWriter().printf("%-8s", String.valueOf(address) + ":");
+    12	    TJ.output.getOutFileWriter().printf("%-" + String.valueOf(MAX_OPNAME_LENGTH + 1) + "s", operationName);
+    13	    TJ.output.getOutFileWriter().printf("%-6d%d%n", firstOperand, secondOperand);
+    14	  }
+    15	
+    16	  TwoOperandInstruction (int operand1, int operand2, String opName)
+    17	  {
+    18	    super(opName);
+    19	    firstOperand = operand1;
+    20	    secondOperand = operand2;
+    21	    writeInstr();
+    22	  }
+    23	}

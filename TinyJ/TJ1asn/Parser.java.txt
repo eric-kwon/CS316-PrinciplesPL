@@ -1,0 +1,412 @@
+     1	package TJ1asn;
+     2	
+     3	import static TJlexer.LexicalAnalyzer.getCurrentToken;
+     4	import static TJlexer.LexicalAnalyzer.nextToken;
+     5	import static TJlexer.Symbols.*;
+     6	import TJlexer.Symbols;
+     7	
+     8	
+     9	// ************************************ Recursive Descent Parser **************************************
+    10	
+    11	public final class Parser {
+    12	
+    13	  private static void accept (Symbols expectedToken) throws SourceFileErrorException
+    14	  {
+    15	    if (getCurrentToken() == expectedToken)
+    16	      nextToken();
+    17	    else throw new SourceFileErrorException("Something's wrong--maybe the following token is missing: "
+    18	                          + expectedToken.symbolRepresentationForOutputFile);
+    19	  }
+    20	
+    21	
+    22	  static void program () throws SourceFileErrorException
+    23	  {
+    24	    TJ.output.printSymbol(NTprogram);
+    25	    TJ.output.incTreeDepth();
+    26	
+    27	    if (getCurrentToken() == IMPORT) importStmt();
+    28	
+    29	    accept(CLASS);
+    30	    accept(IDENT);
+    31	    accept(LBRACE);
+    32	
+    33	    while (getCurrentToken() == STATIC)
+    34	      dataFieldDecl();
+    35	
+    36	    mainDecl();
+    37	
+    38	    while (getCurrentToken() == STATIC)
+    39	      methodDecl();
+    40	
+    41	    accept(RBRACE);
+    42	
+    43	    TJ.output.decTreeDepth();
+    44	  }
+    45	
+    46	
+    47	  private static void importStmt() throws SourceFileErrorException
+    48	  {
+    49	    TJ.output.printSymbol(NTimport);
+    50	    TJ.output.incTreeDepth();
+    51	
+    52	    accept(IMPORT);
+    53	    accept(JAVA);
+    54	    accept(DOT);
+    55	    accept(UTIL);
+    56	    accept(DOT);
+    57	    accept(SCANNER);
+    58	    accept(SEMICOLON);
+    59	
+    60	    TJ.output.decTreeDepth();
+    61	  }
+    62	
+    63	
+    64	  private static void dataFieldDecl() throws SourceFileErrorException
+    65	  {
+    66	    TJ.output.printSymbol(NTdataFieldDecl);
+    67	    TJ.output.incTreeDepth();
+    68	
+    69	    accept(STATIC);
+    70	    varDecl();
+    71	
+    72	    TJ.output.decTreeDepth();
+    73	  }
+    74	
+    75	
+    76	  private static void varDecl() throws SourceFileErrorException
+    77	  {
+    78	    TJ.output.printSymbol(NTvarDecl);
+    79	    TJ.output.incTreeDepth();
+    80	
+    81	    if (getCurrentToken() == INT) {
+    82	      nextToken();
+    83	      singleVarDecl();
+    84	      while (getCurrentToken() == COMMA) {
+    85	        nextToken();
+    86	        singleVarDecl();
+    87	      }
+    88	      accept(SEMICOLON);
+    89	    }
+    90	    else if (getCurrentToken() == SCANNER) {
+    91	      nextToken();
+    92	
+    93	      if (getCurrentToken() == IDENT) {
+    94	        nextToken();
+    95	      }
+    96	      else
+    97	        throw new SourceFileErrorException("Scanner name expected");
+    98	
+    99	      accept(BECOMES);
+   100	      accept(NEW);
+   101	      accept(SCANNER);
+   102	      accept(LPAREN);
+   103	      accept(SYSTEM);
+   104	      accept(DOT);
+   105	      accept(IN);
+   106	      accept(RPAREN);
+   107	      accept(SEMICOLON);
+   108	    }
+   109	    else throw new SourceFileErrorException("\"int\" or \"Scanner\" expected");
+   110	
+   111	    TJ.output.decTreeDepth();
+   112	  }
+   113	
+   114	
+   115	  private static void singleVarDecl() throws SourceFileErrorException
+   116	  {
+   117	    TJ.output.printSymbol(NTsingleVarDecl);
+   118	    TJ.output.incTreeDepth();
+   119	
+   120	    /* ???????? */
+   121	
+   122	    TJ.output.decTreeDepth();
+   123	  }
+   124	
+   125	
+   126	  private static void mainDecl() throws SourceFileErrorException
+   127	  {
+   128	    TJ.output.printSymbol(NTmainDecl);
+   129	    TJ.output.incTreeDepth();
+   130	
+   131	    accept(PUBLIC);
+   132	    accept(STATIC);
+   133	    accept(VOID);
+   134	    accept(MAIN);
+   135	    accept(LPAREN);
+   136	    accept(STRING);
+   137	    accept(IDENT);
+   138	    accept(LBRACKET);
+   139	    accept(RBRACKET);
+   140	    accept(RPAREN);
+   141	
+   142	    compoundStmt();
+   143	
+   144	    TJ.output.decTreeDepth();
+   145	  }
+   146	
+   147	
+   148	  private static void methodDecl() throws SourceFileErrorException
+   149	  {
+   150	    TJ.output.printSymbol(NTmethodDecl);
+   151	    TJ.output.incTreeDepth();
+   152	
+   153	    /* ???????? */
+   154	
+   155	    TJ.output.decTreeDepth();
+   156	  }
+   157	
+   158	
+   159	  private static void parameterDeclList() throws SourceFileErrorException
+   160	  {
+   161	    TJ.output.printSymbol(NTparameterDeclList);
+   162	    TJ.output.incTreeDepth();
+   163	
+   164	    if (getCurrentToken() == INT) {
+   165	        parameterDecl();
+   166	        while (getCurrentToken() == COMMA) {
+   167	          nextToken();
+   168	          parameterDecl();
+   169	        }
+   170	    }
+   171	    else TJ.output.printSymbol(EMPTY);
+   172	
+   173	    TJ.output.decTreeDepth();
+   174	  }
+   175	
+   176	
+   177	  private static void parameterDecl() throws SourceFileErrorException
+   178	  {
+   179	    TJ.output.printSymbol(NTparameterDecl);
+   180	    TJ.output.incTreeDepth();
+   181	
+   182	    accept(INT);
+   183	    accept(IDENT);
+   184	    while (getCurrentToken() == LBRACKET) {
+   185	          nextToken();
+   186	          accept(RBRACKET);
+   187	    }
+   188	
+   189	    TJ.output.decTreeDepth();
+   190	  }
+   191	
+   192	
+   193	  private static void compoundStmt() throws SourceFileErrorException
+   194	  {
+   195	    TJ.output.printSymbol(NTcompoundStmt);
+   196	    TJ.output.incTreeDepth();
+   197	
+   198	    /* ???????? */
+   199	
+   200	    TJ.output.decTreeDepth();
+   201	  }
+   202	
+   203	
+   204	  private static void statement() throws SourceFileErrorException
+   205	  {
+   206	    TJ.output.printSymbol(NTstatement);
+   207	    TJ.output.incTreeDepth();
+   208	
+   209	    switch (getCurrentToken()) {
+   210	      case SEMICOLON: nextToken(); break;
+   211	      case RETURN: nextToken();
+   212	                           if (getCurrentToken() != SEMICOLON)
+   213	                             expr3();
+   214	                           accept(SEMICOLON);
+   215	                           break;
+   216	      case INT: case SCANNER: varDecl(); break;
+   217	      case IDENT: assignmentOrInvoc(); break;
+   218	      case LBRACE: compoundStmt(); break;
+   219	      case IF: ifStmt(); break;
+   220	      case WHILE: whileStmt(); break;
+   221	      case SYSTEM: outputStmt(); break;
+   222	      default: throw new SourceFileErrorException("Expected first token of a <statement>, not "
+   223	                              + getCurrentToken().symbolRepresentationForOutputFile);
+   224	    }
+   225	
+   226	    TJ.output.decTreeDepth();
+   227	  }
+   228	
+   229	
+   230	  private static void assignmentOrInvoc() throws SourceFileErrorException
+   231	  {
+   232	    TJ.output.printSymbol(NTassignmentOrInvoc);
+   233	    TJ.output.incTreeDepth();
+   234	
+   235	    /* ???????? */
+   236	
+   237	    TJ.output.decTreeDepth();
+   238	  }
+   239	
+   240	
+   241	  private static void argumentList() throws SourceFileErrorException
+   242	  {
+   243	     TJ.output.printSymbol(NTargumentList);
+   244	     TJ.output.incTreeDepth();
+   245	
+   246	     /* ???????? */
+   247	
+   248	     TJ.output.decTreeDepth();
+   249	  }
+   250	
+   251	
+   252	  private static void ifStmt() throws SourceFileErrorException
+   253	  {
+   254	    TJ.output.printSymbol(NTifStmt);
+   255	    TJ.output.incTreeDepth();
+   256	
+   257	    accept(IF);
+   258	    accept(LPAREN);
+   259	    expr7();
+   260	    accept(RPAREN);
+   261	
+   262	    statement();
+   263	
+   264	    if (getCurrentToken() == ELSE) {
+   265	      nextToken();
+   266	      statement();
+   267	    }
+   268	
+   269	    TJ.output.decTreeDepth();
+   270	  }
+   271	
+   272	
+   273	  private static void whileStmt() throws SourceFileErrorException
+   274	  {
+   275	    TJ.output.printSymbol(NTwhileStmt);
+   276	    TJ.output.incTreeDepth();
+   277	
+   278	    /* ???????? */
+   279	
+   280	    TJ.output.decTreeDepth();
+   281	  }
+   282	
+   283	
+   284	  private static void outputStmt() throws SourceFileErrorException
+   285	  {
+   286	    TJ.output.printSymbol(NToutputStmt);
+   287	    TJ.output.incTreeDepth();
+   288	
+   289	    accept(SYSTEM);
+   290	    accept(DOT);
+   291	    accept(OUT);
+   292	    accept(DOT);
+   293	
+   294	    switch (getCurrentToken()) {
+   295	
+   296	      /* ????????
+   297	
+   298	      default: throw new SourceFileErrorException("print() or println() expected, not "
+   299	                              + getCurrentToken().symbolRepresentationForOutputFile);
+   300	      */
+   301	
+   302	    }
+   303	
+   304	    TJ.output.decTreeDepth();
+   305	  }
+   306	
+   307	
+   308	  private static void printArgument() throws SourceFileErrorException
+   309	  {
+   310	    TJ.output.printSymbol(NTprintArgument);
+   311	    TJ.output.incTreeDepth();
+   312	
+   313	    /* ???????? */
+   314	
+   315	    TJ.output.decTreeDepth();
+   316	  }
+   317	
+   318	
+   319	  private static void expr7() throws SourceFileErrorException
+   320	  {
+   321	    TJ.output.printSymbol(NTexpr7);
+   322	    TJ.output.incTreeDepth();
+   323	
+   324	    /* ???????? */
+   325	
+   326	    TJ.output.decTreeDepth();
+   327	  }
+   328	
+   329	
+   330	  private static void expr6() throws SourceFileErrorException
+   331	  {
+   332	    TJ.output.printSymbol(NTexpr6);
+   333	    TJ.output.incTreeDepth();
+   334	
+   335	    /* ???????? */
+   336	
+   337	    TJ.output.decTreeDepth();
+   338	  }
+   339	
+   340	
+   341	  private static void expr5() throws SourceFileErrorException
+   342	  {
+   343	    TJ.output.printSymbol(NTexpr5);
+   344	    TJ.output.incTreeDepth();
+   345	
+   346	    /* ???????? */
+   347	
+   348	    TJ.output.decTreeDepth();
+   349	  }
+   350	
+   351	
+   352	  private static void expr4() throws SourceFileErrorException
+   353	  {
+   354	    TJ.output.printSymbol(NTexpr4);
+   355	    TJ.output.incTreeDepth();
+   356	
+   357	    /* ???????? */
+   358	
+   359	    TJ.output.decTreeDepth();
+   360	  }
+   361	
+   362	
+   363	  private static void expr3() throws SourceFileErrorException
+   364	  {
+   365	    TJ.output.printSymbol(NTexpr3);
+   366	    TJ.output.incTreeDepth();
+   367	
+   368	    /* ???????? */
+   369	
+   370	    TJ.output.decTreeDepth();
+   371	  }
+   372	
+   373	
+   374	  private static void expr2() throws SourceFileErrorException
+   375	  {
+   376	    TJ.output.printSymbol(NTexpr2);
+   377	    TJ.output.incTreeDepth();
+   378	
+   379	    expr1();
+   380	
+   381	    while (   getCurrentToken() == TIMES
+   382	           || getCurrentToken() == DIV
+   383	           || getCurrentToken() == MOD) {
+   384	
+   385	      nextToken();
+   386	
+   387	      expr1();
+   388	    }
+   389	
+   390	    TJ.output.decTreeDepth();
+   391	  }
+   392	
+   393	
+   394	  private static void expr1() throws SourceFileErrorException
+   395	  {
+   396	    TJ.output.printSymbol(NTexpr1);
+   397	    TJ.output.incTreeDepth();
+   398	
+   399	    switch (getCurrentToken()) {
+   400	
+   401	      /* ????????
+   402	
+   403	      default: throw new SourceFileErrorException("Malformed expression");
+   404	
+   405	      */
+   406	    }
+   407	
+   408	    TJ.output.decTreeDepth();
+   409	  }
+   410	}
+   411	
+   412	

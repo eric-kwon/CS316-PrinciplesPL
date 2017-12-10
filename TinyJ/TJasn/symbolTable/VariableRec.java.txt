@@ -1,0 +1,32 @@
+     1	package TJasn.symbolTable;
+     2	
+     3	import TJasn.TJ;
+     4	
+     5	abstract public class VariableRec extends TabRec {
+     6	
+     7	  public static final int UNUSED = -32768;
+     8	
+     9	  public static final int INT = 0, SCANNER = 1;
+    10	
+    11	  public final int offset;
+    12	
+    13	  public final int type;
+    14	
+    15	  public final int dimensionCount;
+    16	
+    17	  VariableRec (String idName, int varType, int dimensions, int varOffset)
+    18	  {
+    19	    super(idName, TJ.symTab);
+    20	    type = varType;
+    21	    dimensionCount = dimensions;
+    22	    offset = varOffset;
+    23	  }
+    24	
+    25	  VariableRec (String idName)
+    26	  {
+    27	    super(idName, TJ.symTab);
+    28	    type = SCANNER;
+    29	    dimensionCount = 0;
+    30	    offset = UNUSED;
+    31	  }
+    32	}

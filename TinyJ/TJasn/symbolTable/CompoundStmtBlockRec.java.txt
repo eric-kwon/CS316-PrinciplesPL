@@ -1,0 +1,10 @@
+     1	package TJasn.symbolTable;
+     2	
+     3	import TJasn.TJ;
+     4	import TJasn.ParserAndTranslator;
+     5	
+     6	public class CompoundStmtBlockRec extends BlockRec {
+     7	  public final MethodBlockRec methodBlock
+     8	    =  ParserAndTranslator.getLevel() == 2  ?  (MethodBlockRec) this
+     9	     : ((CompoundStmtBlockRec) enclosingBlock).methodBlock;
+    10	}

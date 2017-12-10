@@ -1,0 +1,93 @@
+     1	package TJlexer;
+     2	
+     3	import java.util.Scanner;
+     4	import java.util.Formatter;
+     5	import java.io.*;
+     6	import TJ1asn.*;
+     7	
+     8	
+     9	public final class SourceHandler {
+    10	  public final static int eofDesignator = -1;
+    11	
+    12	  private int currentChar;
+    13	
+    14	  public int getCurrentChar()
+    15	  {
+    16	    return currentChar;
+    17	  }
+    18	
+    19	  private LineNumberReader sourceFileReader;
+    20	
+    21	  LineNumberReader getSourceFileReader() {
+    22	    return sourceFileReader;
+    23	  }
+    24	
+    25	
+    26	  private void printLineNumber()
+    27	  {
+    28	     System.out.printf("%-5s ", String.valueOf(sourceFileReader.getLineNumber()+1) + ":");
+    29	  }
+    30	
+    31	
+    32	  void nextChar()
+    33	  {
+    34	    /* Get next character and store it in currentChar.  */
+    35	    /* White space chars are stored as ordinary spaces. */
+    36	    /* Print the character read to the screen.          */
+    37	
+    38	    try {
+    39	      switch (currentChar = sourceFileReader.read()) {
+    40	
+    41	        case '\n' :
+    42	          currentChar = ' ';
+    43	          System.out.println();
+    44	          printLineNumber();
+    45	          return;
+    46	
+    47	        case '\r': currentChar = ' '; return;
+    48	
+    49	        case -1:
+    50	          currentChar = eofDesignator; System.out.println(); return;
+    51	
+    52	        case '\t':
+    53	          currentChar = ' ';
+    54	          System.out.print('\t');
+    55	          return;
+    56	
+    57	        default: System.out.print((char) currentChar); return;
+    58	      }
+    59	    }
+    60	    catch (IOException e) {
+    61	      System.out.println(e);
+    62	    }
+    63	  } /* nextChar */
+    64	
+    65	
+    66	  private void openSourceFile(String filename) throws SourceFileErrorException
+    67	  {
+    68	    System.out.print("Enter name of source file:  ");
+    69	    if (filename != null)
+    70	      System.out.print(filename+"\n\n");
+    71	    else {
+    72	      System.out.flush();
+    73	      filename = (new Scanner(System.in)).nextLine();
+    74	      System.out.println();
+    75	    }
+    76	
+    77	    try {
+    78	      sourceFileReader = new LineNumberReader(new FileReader(filename));
+    79	    }
+    80	    catch (FileNotFoundException e) {
+    81	        throw new SourceFileErrorException("Unable to open input file");
+    82	    }
+    83	  }
+    84	
+    85	
+    86	  public SourceHandler(String filename) throws SourceFileErrorException
+    87	  {
+    88	     openSourceFile(filename);
+    89	     printLineNumber();
+    90	     nextChar();
+    91	  }
+    92	}
+    93	

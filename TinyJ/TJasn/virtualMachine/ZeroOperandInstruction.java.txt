@@ -1,0 +1,25 @@
+     1	package TJasn.virtualMachine;
+     2	
+     3	import java.util.Formatter;
+     4	import TJasn.TJ;
+     5	
+     6	abstract public class ZeroOperandInstruction extends Instruction {
+     7	
+     8	  final void writeInstr()
+     9	  {
+    10	     TJ.output.getOutFileWriter().printf("%-8s", String.valueOf(address) + ":");
+    11	     TJ.output.getOutFileWriter().printf("%s%n", operationName);
+    12	  }
+    13	
+    14	  public ZeroOperandInstruction ()
+    15	  {
+    16	    super(null);
+    17	  }
+    18	
+    19	  public ZeroOperandInstruction (String opName)
+    20	  {
+    21	    super(opName);
+    22	    writeInstr();
+    23	  }
+    24	}
+    25	

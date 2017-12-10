@@ -1,0 +1,89 @@
+     1	package TJ1asn;
+     2	
+     3	import java.io.*;
+     4	import java.util.Scanner;
+     5	import TJlexer.Symbols;
+     6	
+     7	
+     8	public class OutputFileHandler {
+     9	
+    10	  protected PrintWriter outFileWriter;
+    11	
+    12	  public final PrintWriter getOutFileWriter()
+    13	  {
+    14	    return outFileWriter;
+    15	  }
+    16	
+    17	  protected int treeDepth = 0;
+    18	
+    19	  public final int getTreeDepth() {
+    20	    return treeDepth;
+    21	  }
+    22	
+    23	  public final void incTreeDepth() {
+    24	    treeDepth++;
+    25	  }
+    26	
+    27	  public final void decTreeDepth() {
+    28	    for (int i = 0; i < treeDepth; i++)
+    29	        outFileWriter.print(" ");
+    30	    outFileWriter.println("... node has no more children");
+    31	    treeDepth--;
+    32	  }
+    33	
+    34	
+    35	  public final void printSymbol(Symbols nodeName)
+    36	  {
+    37	     printSymbol(nodeName, null);
+    38	  }
+    39	
+    40	
+    41	  public final void printSymbol(Symbols nodeName, Object nodeValue)
+    42	  {
+    43	    if (nodeName != Symbols.NONE) {
+    44	      for (int i = 0; i < treeDepth; i++)
+    45	        outFileWriter.print(" ");
+    46	      outputSymbol(nodeName, nodeValue, outFileWriter);
+    47	    }
+    48	  }
+    49	
+    50	
+    51	  public void outputSymbol(Symbols nodeName, Object nodeValue, PrintWriter out)
+    52	  {
+    53	      out.print(nodeName.symbolRepresentationForOutputFile);
+    54	
+    55	      if (nodeValue == null)
+    56	        out.println();
+    57	      else
+    58	        out.println(": " + nodeValue);
+    59	  }
+    60	
+    61	
+    62	  protected final void openOutputFile (String filename) throws SourceFileErrorException
+    63	  {
+    64	    System.out.print("Enter name for output file:  ");
+    65	    if (filename != null)
+    66	      System.out.print(filename+"\n\n");
+    67	    else {
+    68	      System.out.flush();
+    69	      filename = (new Scanner(System.in)).nextLine();
+    70	      System.out.println();
+    71	    }
+    72	    try {
+    73	      outFileWriter = new PrintWriter(new FileWriter(filename));
+    74	    }
+    75	    catch (IOException e) {
+    76	        throw new SourceFileErrorException("Failed to open output file");
+    77	    }
+    78	  }
+    79	
+    80	
+    81	  protected OutputFileHandler(String filename) throws SourceFileErrorException
+    82	  {
+    83	     openOutputFile(filename);
+    84	  }
+    85	}
+    86	
+    87	
+    88	
+    89	

@@ -1,0 +1,34 @@
+     1	package TJasn.symbolTable;
+     2	
+     3	import TJasn.TJ;
+     4	import TJasn.virtualMachine.Instruction;
+     5	
+     6	public abstract class TabRec {
+     7	
+     8	  public final String name;
+     9	
+    10	  private TabRec next = null;
+    11	
+    12	  final TabRec getNext() {
+    13	    return next;
+    14	  }
+    15	
+    16	  TabRec(String idName, BlockRec table)
+    17	  {
+    18	    name = idName;
+    19	    if (name != null) {
+    20	      TabRec prev = table.predecessor(name);
+    21	
+    22	      if (prev == null) {
+    23	        next = table.getFirstIdent();
+    24	        table.setFirstIdent(this);
+    25	      }
+    26	      else {
+    27	        next = prev.next;
+    28	        prev.next = this;
+    29	      }
+    30	    }
+    31	  }
+    32	}
+    33	
+    34	

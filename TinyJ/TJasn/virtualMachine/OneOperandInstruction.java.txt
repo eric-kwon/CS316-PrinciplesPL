@@ -1,0 +1,38 @@
+     1	package TJasn.virtualMachine;
+     2	
+     3	import java.util.Formatter;
+     4	import TJasn.TJ;
+     5	import TJasn.ParserAndTranslator;
+     6	
+     7	abstract public class OneOperandInstruction extends Instruction {
+     8	
+     9	  int operand;
+    10	
+    11	  public final void fixUpOperand (int operandValue)
+    12	  {
+    13	     operand = operandValue;
+    14	
+    15	     for (int i = 0; i < TJ.output.getTreeDepth(); i++)
+    16	       TJ.output.getOutFileWriter().print(" ");
+    17	
+    18	     TJ.output.getOutFileWriter().print("*** Fixed Up:  ");
+    19	     writeInstr();
+    20	  }
+    21	
+    22	  final void writeInstr()
+    23	  {
+    24	    TJ.output.getOutFileWriter().printf("%-8s", String.valueOf(address) + ":");
+    25	    TJ.output.getOutFileWriter().printf("%-" + String.valueOf(MAX_OPNAME_LENGTH + 1) + "s", operationName);
+    26	    TJ.output.getOutFileWriter().printf("%s%n",  operand != Instruction.OPERAND_NOT_YET_KNOWN
+    27	                                               ? String.valueOf(operand)
+    28	                                               : "?");
+    29	  }
+    30	
+    31	  OneOperandInstruction (int operand1, String opName)
+    32	  {
+    33	    super(opName);
+    34	    operand = operand1;
+    35	    writeInstr();
+    36	  }
+    37	}
+    38	
