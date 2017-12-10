@@ -1,0 +1,76 @@
+;; Dribble of #<IO TERMINAL-STREAM> started on 2017-10-30 16:04:06.
+;; Loading file /users/ykong300/solutions-released-list.lsp ...
+;; Loaded file /users/ykong300/solutions-released-list.lsp
+;; Loading file kwon-5.lsp ...
+INDEX
+MIN-FIRST
+SSORT
+QSORT
+MERGE-LISTS
+MSORT
+REMOVE-ADJ-DUPL
+UNREPEATED-ELTS
+REPEATED-ELTS
+COUNT-REPETITIONS
+SUBSET
+OUR-SOME
+OUR-EVERY
+PARTITION1
+QSORT1
+FOO
+TR-ADD
+TR-MUL
+TR-FAC
+SLOW-PRIMEP
+TRANSPOSE1
+TRANSPOSE2
+TRANSPOSE3
+;; Loaded file kwon-5.lsp
+;; Compiling file /users/316F17/kwon_eric316/kwon-5.lsp ...
+;; Wrote file /users/316F17/kwon_eric316/kwon-5.fas
+0 errors, 0 warnings
+Testing INDEX
+Testing INDEX
+Testing MIN-FIRST
+Testing SSORT
+Testing QSORT
+Testing MERGE-LISTS
+Testing MSORT
+Testing REMOVE-ADJ-DUPL
+Testing UNREPEATED-ELTS
+Testing REPEATED-ELTS
+Testing COUNT-REPETITIONS
+Testing SUBSET
+Testing SUBSET
+Testing OUR-SOME
+Testing OUR-SOME
+Testing OUR-EVERY
+Testing OUR-EVERY
+Testing QSORT1
+Testing QSORT1
+Testing FOO
+Testing FOO
+Testing TR-ADD
+Testing TR-MUL
+Testing TR-FAC
+Testing SLOW-PRIMEP
+Testing SLOW-PRIMEP
+Testing SLOW-PRIMEP
+Testing SLOW-PRIMEP
+Testing SLOW-PRIMEP
+Testing TRANSPOSE1
+Testing TRANSPOSE2
+Testing TRANSPOSE3
+Testing TRANSPOSE1
+Testing TRANSPOSE2
+Testing TRANSPOSE3
+
+
+
+
+
+*******LIST-OF-PROBABLE-ERRORS-FOUND******* 
+NIL
+
+
+;; Dribble of #<IO TERMINAL-STREAM> finished on 2017-10-30 16:04:11.

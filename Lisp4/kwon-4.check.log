@@ -1,0 +1,47 @@
+;; Dribble of #<IO TERMINAL-STREAM> started on 2017-10-18 15:21:18.
+;; Loading file /users/ykong300/solutions-released-list.lsp ...
+;; Loaded file /users/ykong300/solutions-released-list.lsp
+;; Loading file kwon-4.lsp ...
+SUM
+NEG-NUMS
+INC-LIST-2
+INSERT
+ISORT
+SPLIT-LIST
+PARTITION
+POS
+SPLIT-NUMS
+SET-UNION
+SET-REMOVE
+SET-EXCL-UNION
+SINGLETONS
+;; Loaded file kwon-4.lsp
+;; Compiling file /users/316F17/kwon_eric316/kwon-4.lsp ...
+;; Wrote file /users/316F17/kwon_eric316/kwon-4.fas
+0 errors, 0 warnings
+Testing SUM
+Testing NEG-NUMS
+Testing INC-LIST-2
+Testing INSERT
+Testing ISORT
+Testing SPLIT-LIST
+Testing PARTITION
+Testing POS
+Testing POS
+Testing SPLIT-NUMS
+Testing SPLIT-NUMS
+Testing SET-UNION
+Testing SET-REMOVE
+Testing SET-EXCL-UNION
+Testing SINGLETONS
+Testing SINGLETONS
+
+
+
+
+
+*******LIST-OF-PROBABLE-ERRORS-FOUND******* 
+NIL
+
+
+;; Dribble of #<IO TERMINAL-STREAM> finished on 2017-10-18 15:21:18.

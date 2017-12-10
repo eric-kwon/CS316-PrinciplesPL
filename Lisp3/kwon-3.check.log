@@ -1,0 +1,57 @@
+;; Dribble of #<IO TERMINAL-STREAM> started on 2017-10-02 15:21:28.
+;; Loading file /users/ykong300/solutions-released-list.lsp ...
+;; Loaded file /users/ykong300/solutions-released-list.lsp
+;; Loading file kwon-3.lsp ...
+MIN-2
+SAFE-AVG
+ODD-GT-MILLION
+MULTIPLE-MEMBER
+MONTH->INTEGER
+SCORE->GRADE
+GT
+SAME-SIGN
+SAFE-DIV
+;; Loaded file kwon-3.lsp
+;; Compiling file /users/316F17/kwon_eric316/kwon-3.lsp ...
+;; Wrote file /users/316F17/kwon_eric316/kwon-3.fas
+0 errors, 0 warnings
+Testing MIN-2
+Testing MIN-2
+Testing MIN-2
+Testing SAFE-AVG
+Testing SAFE-AVG
+Testing ODD-GT-MILLION
+Testing ODD-GT-MILLION
+Testing ODD-GT-MILLION
+Testing ODD-GT-MILLION
+Testing MULTIPLE-MEMBER
+Testing MULTIPLE-MEMBER
+Testing MULTIPLE-MEMBER
+Testing MONTH->INTEGER
+Testing MONTH->INTEGER
+Testing MONTH->INTEGER
+Testing MONTH->INTEGER
+Testing SCORE->GRADE
+Testing SCORE->GRADE
+Testing SCORE->GRADE
+Testing SCORE->GRADE
+Testing GT
+Testing GT
+Testing GT
+Testing SAME-SIGN
+Testing SAME-SIGN
+Testing SAME-SIGN
+Testing SAME-SIGN
+Testing SAFE-DIV
+Testing SAFE-DIV
+Testing SAFE-DIV
+
+
+
+
+
+*******LIST-OF-PROBABLE-ERRORS-FOUND******* 
+NIL
+
+
+;; Dribble of #<IO TERMINAL-STREAM> finished on 2017-10-02 15:21:28.

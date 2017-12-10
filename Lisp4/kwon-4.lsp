@@ -1,0 +1,86 @@
+;Solution to Problem 1
+(defun SUM (L)
+  (cond ((or (endp L) (not (numberp (car L)))) 0)
+        (T (let ((X (SUM (cdr L))))
+             (+ (car L) X)))))
+;Solution to Problem 2
+(defun NEG-NUMS (L)
+  (cond ((endp L) NIL)
+        (T (let ((X (NEG-NUMS (cdr L))))
+             (cond ((not (numberp (car L))) X)
+                   ((minusp (car L)) (cons (car L) X))
+                   (T X))))))
+;Solution to Problem 3
+(defun INC-LIST-2 (L N)
+  (cond ((or (endp L) (not (numberp (car L))) (not (numberp N))) NIL)
+        (T (let ((X (INC-LIST-2 (cdr L) N)))
+             (cons (+ (car L) N) X)))))
+;Solution to Problem 4
+(defun INSERT (N L)
+  (cond ((endp L) (list N))
+        ((or (not (numberp N)) (not (numberp (car L)))) NIL)
+        (T (let ((X (INSERT N (cdr L))))
+             (cond ((> (car L) N) (cons N L))
+                   (T (cons (car L) X)))))))
+;Solution to Problem 5
+(defun ISORT (L)
+  (cond ((or (endp L) (not (numberp (car L)))) NIL)
+        (T (let ((X (ISORT (cdr L))))
+             (INSERT (car L) X)))))
+;Solution to Problem 6
+(defun SPLIT-LIST (L)
+  (cond ((endp L) (list () ()))
+        (T (let ((X (SPLIT-LIST (cdr L))))
+             (list (cons (car L) (cadr X)) (car X))))))
+;Solution to Problem 7
+(defun PARTITION (L P)
+  (cond ((endp L) (list () ()))
+        ((or (not (numberp (car L))) (not (numberp P))) NIL)
+        (T (let ((X (PARTITION (cdr L) P)))
+             (cond ((< (car L) P) (list (cons (car L) (car X)) (cadr X)))
+                   (T (list (car X) (cons (car L)(cadr X)))))))))
+;Solution to Problem 8
+(defun POS (E L)
+  (cond ((endp L) 0)
+        ((equal E (car L)) 1)
+        (T (let ((X (POS E (cdr L))))
+             (if (= X 0)
+               0
+               (+ X 1))))))
+;Solution to Problem 9
+(defun SPLIT-NUMS (N)
+  (cond ((minusp N) NIL)
+        ((zerop N) (list (list N) NIL))
+        (T (let ((X (SPLIT-NUMS (- N 1))))
+             (if (evenp N)
+               (list (cons N (car X)) (cadr X))
+               (list (car X) (cons N (cadr X))))))))
+;Solution to Problem 10
+(defun SET-UNION (S1 S2)
+  (cond ((endp S1) S2)
+        ((endp S2) S1)
+        (T (let ((X (SET-UNION (cdr S1) S2)))
+             (if (member (car S1) X)
+               X
+               (cons (car S1) X))))))
+;Solution to Problem 11
+(defun SET-REMOVE (Y S)
+  (cond ((or (endp S) (not (atom Y))) NIL)
+        (T (let ((X (SET-REMOVE Y (cdr S))))
+             (if (or (member (car S) X) (eq (car S) Y))
+               X
+               (cons (car S) X))))))
+;Solution to Problem 12
+(defun SET-EXCL-UNION (S1 S2)
+  (cond ((endp S1) S2)
+        (T (let ((X (SET-EXCL-UNION (cdr S1) S2)))
+             (if (member (car S1) X)
+               (SET-REMOVE (car S1) X)
+               (cons (car S1) X))))))
+;Solution to Problem 13
+(defun SINGLETONS (E)
+  (cond ((endp E) NIL)
+        (T (let ((X (SINGLETONS (rest E))))
+             (if (member (first E) (rest E))
+               (SET-REMOVE (first E) X)
+               (cons (first E) X))))))
