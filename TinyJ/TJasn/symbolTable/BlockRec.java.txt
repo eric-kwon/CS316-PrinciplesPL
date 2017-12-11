@@ -1,0 +1,145 @@
+     1	package TJasn.symbolTable;
+     2	
+     3	import TJasn.TJ;
+     4	import TJasn.ParserAndTranslator;
+     5	
+     6	public class BlockRec {
+     7	  public final BlockRec enclosingBlock = TJ.symTab;
+     8	
+     9	  private TabRec firstIdent = null;
+    10	
+    11	  final TabRec getFirstIdent() {
+    12	    return firstIdent;
+    13	  }
+    14	
+    15	  final void setFirstIdent(TabRec t) {
+    16	    firstIdent = t;
+    17	  }
+    18	
+    19	  private int nextOffset;
+    20	
+    21	  public final int getNextOffset() {
+    22	    return nextOffset;
+    23	  }
+    24	
+    25	  public final void setNextOffset(int offset) {
+    26	    nextOffset = offset;
+    27	  }
+    28	
+    29	
+    30	  private int lastStaticVarAddr = -1;
+    31	
+    32	  public final int getLastStaticVarAddr() {
+    33	    return lastStaticVarAddr;
+    34	  }
+    35	
+    36	  public final void setLastStaticVarAddr(int addr) {  // used in class ParserAndTranslator
+    37	    lastStaticVarAddr = addr;                   // within program()
+    38	  }
+    39	
+    40	
+    41	
+    42	  public final static TabRec searchForStatic (String idName, Boolean methodNameExpected)
+    43	  {
+    44	    /* search for symbol table record of a method name (if methoidNameExpected is true) or a */
+    45	    /* static variable (if methodNameExpected is false); return it if found, otherwise null  */
+    46	
+    47	    for (TabRec p = TJ.staticTab.firstIdent; p != null; p = p.getNext()) {
+    48	        int comparison = p.name.compareTo(idName);
+    49	
+    50	        if (comparison < 0)
+    51	          continue;
+    52	        else if (comparison > 0)
+    53	          break;
+    54	        else if (methodNameExpected  ^  p instanceof VariableRec) /* found it! */
+    55	          return p;
+    56	    }
+    57	
+    58	    /* TabRec not found */
+    59	    return null;
+    60	  }
+    61	
+    62	
+    63	  public final TabRec searchForLocal (String idName)
+    64	  {
+    65	    /* search for symbol table record of a local variable with specified */
+    66	    /* idName; return it if found, otherwise return null                 */
+    67	
+    68	    BlockRec b = this;
+    69	
+    70	    while (b != TJ.staticTab) {
+    71	      /* search this block's subtable */
+    72	
+    73	      for (TabRec p = b.firstIdent; p != null; p = p.getNext()) {
+    74	        int comparison = p.name.compareTo(idName);
+    75	
+    76	        if (comparison < 0)
+    77	          continue;
+    78	        else if (comparison > 0)
+    79	          break;
+    80	        else
+    81	          return p;
+    82	      }
+    83	
+    84	      b = b.enclosingBlock; /* prepare to search enclosing block's table */
+    85	    }
+    86	
+    87	    /* TabRec not found */
+    88	    return null;
+    89	  }
+    90	
+    91	
+    92	  public final VariableRec searchForVariable (String idName)
+    93	  {
+    94	    /* search for symbol table record of a variable with specified */
+    95	    /* idName; return it if found, otherwise return null           */
+    96	
+    97	    BlockRec b = this;
+    98	
+    99	    do {
+   100	      /* search this block's subtable */
+   101	
+   102	      for (TabRec p = b.firstIdent; p != null; p = p.getNext()) {
+   103	        int comparison = p.name.compareTo(idName);
+   104	
+   105	        if (comparison < 0)
+   106	          continue;
+   107	        else if (comparison > 0)
+   108	          break;
+   109	        else if (p instanceof VariableRec) /* found it! */
+   110	          return (VariableRec) p;
+   111	      }
+   112	
+   113	      b = b.enclosingBlock; /* prepare to search enclosing block's table */
+   114	    } while (b != null);
+   115	
+   116	    /* TabRec not found */
+   117	    return null;
+   118	  }
+   119	
+   120	
+   121	  final TabRec predecessor(String idName)
+   122	  {
+   123	  /* returns the TabRec that should immediately precede the TabRec */
+   124	  /* for a new identifier with name idName                         */
+   125	
+   126	    TabRec prev = null;
+   127	    for (TabRec p = firstIdent; p != null; p = p.getNext())
+   128	      if (p.name.compareTo(idName) < 0)
+   129	        prev = p;
+   130	      else
+   131	        return prev;
+   132	
+   133	    return prev;
+   134	  }
+   135	
+   136	  public BlockRec(int staticLevel) {
+   137	    nextOffset =   staticLevel == 1 ? TJ.FIRST_STATIC_ADDRESS
+   138	                 : staticLevel == 2 ? TJ.FIRST_LOCALVAR_STACKFRAME_OFFSET
+   139	                 : enclosingBlock.nextOffset;
+   140	  }
+   141	
+   142	  public BlockRec() {
+   143	    this(ParserAndTranslator.getLevel());
+   144	  }
+   145	}

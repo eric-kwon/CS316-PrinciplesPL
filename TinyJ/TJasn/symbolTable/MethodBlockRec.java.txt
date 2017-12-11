@@ -1,0 +1,26 @@
+     1	package TJasn.symbolTable;
+     2	
+     3	public final class MethodBlockRec extends CompoundStmtBlockRec {
+     4	  private int maxNextOffset = 0;
+     5	
+     6	  public int getMaxNextOffset() {
+     7	    return maxNextOffset;
+     8	  }
+     9	
+    10	  public void setMaxNextOffset(int size) {  // used in class ParserAndTranslator
+    11	    maxNextOffset = size;                   // within compoundStmt()
+    12	  }
+    13	
+    14	
+    15	  public final MethodRec methodRec;
+    16	
+    17	  public MethodBlockRec(MethodRec m) {
+    18	    methodRec = m;
+    19	    m.setTable(this);
+    20	  }
+    21	
+    22	}
+    23	
+    24	
+    25	
+    26	

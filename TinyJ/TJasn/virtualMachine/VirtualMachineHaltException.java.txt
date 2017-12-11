@@ -1,0 +1,9 @@
+     1	package TJasn.virtualMachine;
+     2	
+     3	public class VirtualMachineHaltException extends TJ1asn.SourceFileErrorException {
+     4	
+     5	  public VirtualMachineHaltException(String errMsg)
+     6	  {
+     7	    super(errMsg);
+     8	  }
+     9	}

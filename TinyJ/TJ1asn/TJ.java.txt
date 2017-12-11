@@ -1,0 +1,54 @@
+     1	package TJ1asn;
+     2	
+     3	import TJlexer.SourceHandler;
+     4	import TJlexer.LexicalAnalyzer;
+     5	import TJlexer.Symbols;
+     6	import java.io.PrintWriter;
+     7	
+     8	public final class TJ {
+     9	  public static SourceHandler input;
+    10	  public static OutputFileHandler output;
+    11	
+    12	  public static final int DATA_MEMORY_SIZE = 20000;
+    13	  public static final int data[] = new int [DATA_MEMORY_SIZE];
+    14	                                           /* space for string literals */
+    15	
+    16	  public static void main(String args[])
+    17	  {
+    18	     final String inputFileName = args.length == 0 ? null : args[0];
+    19	     final String outputFileName = args.length <= 1 ? null : args[1];
+    20	
+    21	     try {
+    22	       output = new OutputFileHandler(outputFileName);
+    23	       input = new SourceHandler(inputFileName);
+    24	
+    25	       LexicalAnalyzer.setIO(input, output);
+    26	       LexicalAnalyzer.setStringTable(data);
+    27	       LexicalAnalyzer.nextToken();
+    28	
+    29	       Parser.program();
+    30	
+    31	       if (LexicalAnalyzer.getCurrentToken() != Symbols.ENDOFINPUT)
+    32	         throw new SourceFileErrorException("Token encountered after end of program");
+    33	
+    34	     } catch (SourceFileErrorException theError) {
+    35	         System.out.println("\n\n\nERROR!  " + theError.errorMessage);
+    36	         if (input != null) {
+    37	           if (input.getCurrentChar() != SourceHandler.eofDesignator)
+    38	             System.out.println("input.currentChar = '" + (char) input.getCurrentChar() + '\'');
+    39	           else
+    40	             System.out.println("input.currentChar = EOF");
+    41	           System.out.print("LexicalAnalyzer.currentToken = ");
+    42	           TJ.output.outputSymbol(LexicalAnalyzer.getCurrentToken(), LexicalAnalyzer.getTokenValue(),
+    43	                                    new PrintWriter(System.out, true));
+    44	           System.out.println();
+    45	         }
+    46	     } finally {
+    47	         if (output != null)
+    48	           output.getOutFileWriter().close();
+    49	     }
+    50	  }
+    51	
+    52	}
+    53	
+    54	

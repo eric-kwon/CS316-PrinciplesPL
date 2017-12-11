@@ -1,0 +1,251 @@
+     1	package TJlexer;
+     2	
+     3	import static TJlexer.Symbols.*;
+     4	
+     5	import TJ1asn.OutputFileHandler;
+     6	import TJ1asn.SourceFileErrorException;
+     7	
+     8	public final class LexicalAnalyzer {
+     9	
+    10	  private static SourceHandler input;
+    11	  private static OutputFileHandler output;
+    12	  private static int stringTable[];
+    13	
+    14	  public static void setIO(SourceHandler sourceHandler, OutputFileHandler outputFileHandler) {
+    15	     input = sourceHandler;
+    16	     output = outputFileHandler;
+    17	  }
+    18	
+    19	  public static void setStringTable(int[] tbl) {
+    20	     stringTable = tbl;
+    21	  }
+    22	
+    23	  private static Symbols currentToken = NONE;
+    24	
+    25	  public static Symbols getCurrentToken() {
+    26	    currentTokenNeedsToBeInspected = false;
+    27	    return currentToken;
+    28	  }
+    29	
+    30	  private static boolean currentTokenNeedsToBeInspected;
+    31	
+    32	  private static int currentValue;   // numerical value of UNSIGNEDINT token
+    33	
+    34	  public static int getCurrentValue() {
+    35	    return currentValue;
+    36	  }
+    37	
+    38	
+    39	  private static String currentSpelling;      // spelling of IDENT
+    40	
+    41	  public static String getCurrentSpelling() {
+    42	    return currentSpelling;
+    43	  }
+    44	
+    45	
+    46	  private static int startOfString;
+    47	  private static int endOfString = -1;
+    48	
+    49	
+    50	  public static int getStartOfString() {
+    51	    return startOfString;
+    52	  }
+    53	
+    54	  public static int getEndOfString() {
+    55	    return endOfString;
+    56	  }
+    57	
+    58	  public static void setEndOfString(int addr) { // called in ParserAndTranslator's program() method
+    59	    endOfString = addr;
+    60	  }
+    61	
+    62	
+    63	  private static Object tokenValue;   // passed to output.printSymbol() at start of nextToken();
+    64	                                      // contains information used to output the currentToken
+    65	
+    66	  public static Object getTokenValue() { return tokenValue; }
+    67	
+    68	
+    69	  public static void nextToken() throws SourceFileErrorException
+    70	  {
+    71	    output.printSymbol(currentToken, tokenValue);
+    72	    if (currentTokenNeedsToBeInspected)
+    73	      throw new SourceFileErrorException("Internal error in parser: Token discarded without being inspected");
+    74	    else
+    75	      currentTokenNeedsToBeInspected = true;
+    76	
+    77	    StringBuilder currentTokenString = new StringBuilder(10);
+    78	
+    79	    while (input.getCurrentChar() == ' ')  input.nextChar();
+    80	
+    81	    tokenValue = null;
+    82	
+    83	    if (Character.isLetter((char) input.getCurrentChar())
+    84	              || input.getCurrentChar() == '_'
+    85	              || input.getCurrentChar() == '$') {
+    86	        /* identifier or reserved word */
+    87	
+    88	      do {
+    89	        currentTokenString.append((char) input.getCurrentChar());
+    90	        input.nextChar();
+    91	      } while (Character.isLetterOrDigit((char) input.getCurrentChar())
+    92	                || input.getCurrentChar() == '_'
+    93	                || input.getCurrentChar() == '$');
+    94	
+    95	      currentSpelling = currentTokenString.toString();
+    96	
+    97	      for (Symbols resWord : Symbols.reservedWords) {
+    98	        if (currentSpelling.equals(resWord.reservedWordSpelling)) {
+    99	          currentToken = resWord;  return;
+   100	        }
+   101	      }
+   102	      currentToken = IDENT; 
+   103	      tokenValue = currentSpelling;
+   104	      return;
+   105	    } /* identifier or reserved word */
+   106	
+   107	    else {
+   108	      switch (input.getCurrentChar()) {
+   109	        case '0': case '1': case '2': case '3': case '4':
+   110	        case '5': case '6': case '7': case '8': case '9':
+   111	           /* unsigned integer */
+   112	          currentToken = UNSIGNEDINT;
+   113	          do {
+   114	            currentTokenString.append((char) input.getCurrentChar());
+   115	            input.nextChar();
+   116	          } while (input.getCurrentChar() >= '0' &&  input.getCurrentChar() <= '9');
+   117	          currentValue = Integer.parseInt(currentTokenString.toString());
+   118	          tokenValue = currentValue;
+   119	
+   120	          return;
+   121	
+   122	        case '"':
+   123	          currentToken = CHARSTRING;
+   124	          startOfString = endOfString + 1;
+   125	
+   126	          int lineNum = input.getSourceFileReader().getLineNumber();
+   127	
+   128	          input.nextChar();
+   129	
+   130	          int c;
+   131	
+   132	          while ((c = input.getCurrentChar()) != '"') {
+   133	
+   134	            if (c == SourceHandler.eofDesignator)
+   135	              throw new SourceFileErrorException("End of file occurred within a string.");
+   136	            else if (c == '\\') {
+   137	              input.nextChar();
+   138	              switch (input.getCurrentChar()) {
+   139	                case 'n': c = '\n'; break;
+   140	                case '\\': c = '\\'; break;
+   141	                case '"': c = '\"'; break;
+   142	                default: c = input.getCurrentChar(); break;
+   143	              }
+   144	            }
+   145	
+   146	            currentTokenString.append((char) c);
+   147	            stringTable[++endOfString] = c;
+   148	            input.nextChar();
+   149	          }
+   150	          if (input.getSourceFileReader().getLineNumber() != lineNum)
+   151	            throw new SourceFileErrorException("Newline not allowed within a string.");
+   152	
+   153	          tokenValue = '"' + currentTokenString.toString() + '"';
+   154	
+   155	          input.nextChar();
+   156	
+   157	          return;
+   158	
+   159	        case '=':
+   160	          input.nextChar();
+   161	          if (input.getCurrentChar() == '=') {
+   162	            currentToken = EQ;
+   163	            input.nextChar();
+   164	          }
+   165	          else currentToken = BECOMES;
+   166	
+   167	          return;
+   168	
+   169	        case '!':
+   170	          input.nextChar();
+   171	          if (input.getCurrentChar() == '=') {
+   172	            currentToken = NE;
+   173	            input.nextChar();
+   174	          }
+   175	          else currentToken = NOT;
+   176	
+   177	          return;
+   178	
+   179	        case '<':
+   180	          input.nextChar();
+   181	          if (input.getCurrentChar() == '=') {
+   182	            currentToken = LE;
+   183	            input.nextChar();
+   184	          }
+   185	          else currentToken = LT;
+   186	
+   187	          return;
+   188	
+   189	        case '>':
+   190	          input.nextChar();
+   191	          if (input.getCurrentChar() == '=') {
+   192	            currentToken = GE;
+   193	            input.nextChar();
+   194	          }
+   195	          else currentToken = GT;
+   196	
+   197	          return;
+   198	
+   199	        case '+':
+   200	          input.nextChar();
+   201	          if (input.getCurrentChar() == '+') {
+   202	            currentToken = BADTOKEN;
+   203	            tokenValue = "\"++\"";
+   204	            throw new SourceFileErrorException("Unrecognized token: " + tokenValue);
+   205	          }
+   206	          else currentToken = PLUS;
+   207	
+   208	          return;
+   209	
+   210	        case '-':
+   211	          input.nextChar();
+   212	          if (input.getCurrentChar() == '-') {
+   213	            currentToken = BADTOKEN;
+   214	            tokenValue = "\"--\"";
+   215	            throw new SourceFileErrorException("Unrecognized token: " + tokenValue);
+   216	          }
+   217	          else currentToken = MINUS;
+   218	
+   219	          return;
+   220	
+   221	        case '&': currentToken = AND; input.nextChar(); return;
+   222	        case '|': currentToken = OR; input.nextChar(); return;
+   223	        case '{': currentToken = LBRACE; input.nextChar(); return;
+   224	        case '}': currentToken = RBRACE; input.nextChar(); return;
+   225	        case ',': currentToken = COMMA; input.nextChar(); return;
+   226	        case ';': currentToken = SEMICOLON; input.nextChar(); return;
+   227	        case '(': currentToken = LPAREN; input.nextChar(); return;
+   228	        case ')': currentToken = RPAREN; input.nextChar(); return;
+   229	        case '[': currentToken = LBRACKET; input.nextChar(); return;
+   230	        case ']': currentToken = RBRACKET; input.nextChar(); return;
+   231	        case '.': currentToken = DOT; input.nextChar(); return;
+   232	        case '*': currentToken = TIMES; input.nextChar(); return;
+   233	        case '/': currentToken = DIV; input.nextChar(); return;
+   234	        case '%': currentToken = MOD; input.nextChar(); return;
+   235	
+   236	        case SourceHandler.eofDesignator:
+   237	          currentToken = ENDOFINPUT;
+   238	          return;
+   239	
+   240	        default:
+   241	          currentToken = BADTOKEN;
+   242	          tokenValue = "'" + (char) input.getCurrentChar() + "'";
+   243	          throw new SourceFileErrorException("Unrecognized token: " + tokenValue);
+   244	      }
+   245	    }
+   246	  } /* nextToken */
+   247	
+   248	}
+   249	
+   250	
+   251	

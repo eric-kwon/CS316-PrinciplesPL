@@ -1,0 +1,95 @@
+     1	package TJasn.symbolTable;
+     2	
+     3	import TJasn.TJ;
+     4	
+     5	public final class MethodRec extends TabRec {
+     6	
+     7	  public static final int VOID = -1, INT = 0, NOT_KNOWN = -2;
+     8	
+     9	  private static int undeclaredMethodCount = 0;
+    10	
+    11	  public static int getUndeclaredMethodCount() {
+    12	    return undeclaredMethodCount;
+    13	  }
+    14	
+    15	  public static void incUndeclaredMethodCount() {
+    16	    undeclaredMethodCount++;
+    17	  }
+    18	
+    19	  public static void decUndeclaredMethodCount() {
+    20	    undeclaredMethodCount--;
+    21	  }
+    22	
+    23	
+    24	  private int startAddr;
+    25	
+    26	  public int getStartAddr() {
+    27	    return startAddr;
+    28	  }
+    29	
+    30	  public void setStartAddr(int addr) { // used in class ParserAndTranslator
+    31	      startAddr = addr;                //within mainDecl(), methodDecl(), lookUpCalledMethod()
+    32	  }
+    33	
+    34	
+    35	  private MethodBlockRec table;
+    36	
+    37	  public MethodBlockRec getTable() {
+    38	    return table;
+    39	  }
+    40	
+    41	  void setTable(MethodBlockRec mb) {
+    42	    table = mb;
+    43	  }
+    44	
+    45	
+    46	  private FixUpRec callsToBeFixedUp = null;
+    47	
+    48	  public FixUpRec getCallsToBeFixedUp() {
+    49	    return callsToBeFixedUp;
+    50	  }
+    51	
+    52	  public void setCallsToBeFixedUp(FixUpRec f) {   // used in class ParserAndTranslator
+    53	    callsToBeFixedUp = f;                         // within translateCall() and methodDecl()
+    54	  }
+    55	
+    56	
+    57	  private int type = NOT_KNOWN;
+    58	
+    59	  public int getType() {
+    60	    return type;
+    61	  }
+    62	
+    63	  public void setType(int typ) {   // used in class ParserAndTranslator
+    64	    type = typ;                    // within lookUpCalledMethod() and methodDecl()
+    65	  }
+    66	
+    67	
+    68	  private int dimensionCount = NOT_KNOWN;
+    69	
+    70	  public int getDimensionCount() {
+    71	    return dimensionCount;
+    72	  }
+    73	
+    74	  public void setDimensionCount(int d) {  // used in class ParserAndTranslator
+    75	    dimensionCount = d;                   // within methodDecl()
+    76	  }
+    77	
+    78	
+    79	  private int argCount = NOT_KNOWN;
+    80	
+    81	  public int getArgCount() {
+    82	    return argCount;
+    83	  }
+    84	
+    85	  public void setArgCount(int argc) {  // used in class ParserAndTranslator
+    86	    argCount = argc;                   // within methodDecl() and argumentList()
+    87	  }
+    88	
+    89	  public MethodRec(String idName, int resultType, int dimensions)
+    90	  {
+    91	    super(idName, TJ.staticTab);
+    92	    type = resultType;
+    93	    dimensionCount = dimensions;
+    94	  }
+    95	}

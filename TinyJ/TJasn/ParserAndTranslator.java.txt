@@ -1,0 +1,794 @@
+     1	package TJasn;
+     2	
+     3	import static TJlexer.LexicalAnalyzer.getCurrentToken;
+     4	import static TJlexer.LexicalAnalyzer.nextToken;
+     5	import static TJlexer.Symbols.*;
+     6	import static TJasn.TJ.staticTab;
+     7	import static TJasn.TJ.symTab;
+     8	import TJ1asn.SourceFileErrorException;
+     9	import TJlexer.Symbols;
+    10	import TJlexer.LexicalAnalyzer;
+    11	import TJasn.symbolTable.*;
+    12	import TJasn.virtualMachine.*;
+    13	
+    14	
+    15	// ******************* Recursive Descent ParserAndTranslator ***************************
+    16	
+    17	public final class ParserAndTranslator {
+    18	
+    19	  private static class IdentList {    // for parameter lists of methods
+    20	    String name;
+    21	    int dimensions;
+    22	    IdentList next;
+    23	  }
+    24	
+    25	  private static class ParameterList {
+    26	    IdentList theParams;
+    27	    int paramCount;
+    28	  }
+    29	
+    30	  private static int level = 1;
+    31	
+    32	  public static int getLevel() {
+    33	    return level;
+    34	  }
+    35	
+    36	  private static Boolean ScannerImported = false;
+    37	
+    38	  private static void accept (Symbols expectedToken) throws SourceFileErrorException
+    39	  {
+    40	    if (getCurrentToken() == expectedToken)
+    41	      nextToken();
+    42	    else throw new SourceFileErrorException("Something's wrong--maybe the following token is missing: "
+    43	                                               + expectedToken.symbolRepresentationForOutputFile);
+    44	  }
+    45	
+    46	
+    47	  private static MethodRec lookUpCalledMethod(String methodName, int expectedType)
+    48	                                          throws SourceFileErrorException
+    49	  {
+    50	     MethodRec t = (MethodRec) BlockRec.searchForStatic(methodName, true);
+    51	
+    52	     if (t == null) { /* the method has never been declared nor called */
+    53	        t = new MethodRec(methodName, expectedType, MethodRec.NOT_KNOWN);
+    54	        t.setStartAddr(Instruction.OPERAND_NOT_YET_KNOWN);
+    55	        MethodRec.incUndeclaredMethodCount();
+    56	     }
+    57	
+    58	     else if (expectedType == MethodRec.NOT_KNOWN)
+    59	         ;
+    60	     else if (t.getType() == MethodRec.NOT_KNOWN)
+    61	         t.setType(expectedType);
+    62	
+    63	     else if (expectedType != t.getType())
+    64	             throw new SourceFileErrorException("Method does not have appropriate return type");
+    65	
+    66	     return t;
+    67	  }
+    68	
+    69	
+    70	  static void program () throws SourceFileErrorException
+    71	  {
+    72	    TJ.output.printSymbol(NTprogram);
+    73	    TJ.output.incTreeDepth();
+    74	
+    75	    if (getCurrentToken() == IMPORT) {
+    76	       ScannerImported = true;
+    77	       importStmt();
+    78	    }
+    79	
+    80	    accept(CLASS);
+    81	    accept(IDENT);
+    82	    accept(LBRACE);
+    83	
+    84	    while (getCurrentToken() == STATIC)
+    85	      dataFieldDecl();
+    86	
+    87	    staticTab.setLastStaticVarAddr(staticTab.getNextOffset() - 1);
+    88	
+    89	    LexicalAnalyzer.setEndOfString(staticTab.getLastStaticVarAddr());
+    90	
+    91	    mainDecl();
+    92	
+    93	    while (getCurrentToken() == STATIC)
+    94	      methodDecl();
+    95	
+    96	    if (MethodRec.getUndeclaredMethodCount() != 0)
+    97	      throw new SourceFileErrorException("Not all called methods have been declared");
+    98	
+    99	    accept(RBRACE);
+   100	
+   101	    TJ.output.decTreeDepth();
+   102	  }
+   103	
+   104	
+   105	  private static void importStmt() throws SourceFileErrorException
+   106	  {
+   107	    TJ.output.printSymbol(NTimport);
+   108	    TJ.output.incTreeDepth();
+   109	
+   110	    accept(IMPORT);
+   111	    accept(JAVA);
+   112	    accept(DOT);
+   113	    accept(UTIL);
+   114	    accept(DOT);
+   115	    accept(SCANNER);
+   116	    accept(SEMICOLON);
+   117	
+   118	    TJ.output.decTreeDepth();
+   119	  }
+   120	
+   121	
+   122	  private static void dataFieldDecl() throws SourceFileErrorException
+   123	  {
+   124	    TJ.output.printSymbol(NTdataFieldDecl);
+   125	    TJ.output.incTreeDepth();
+   126	
+   127	    accept(STATIC);
+   128	    varDecl();
+   129	
+   130	    TJ.output.decTreeDepth();
+   131	  }
+   132	
+   133	
+   134	  private static void varDecl() throws SourceFileErrorException
+   135	  {
+   136	    TJ.output.printSymbol(NTvarDecl);
+   137	    TJ.output.incTreeDepth();
+   138	
+   139	    if (getCurrentToken() == INT) {
+   140	      nextToken();
+   141	      singleVarDecl();
+   142	      while (getCurrentToken() == COMMA) {
+   143	        nextToken();
+   144	        singleVarDecl();
+   145	      }
+   146	      accept(SEMICOLON);
+   147	    }
+   148	    else if (getCurrentToken() == SCANNER) {
+   149	
+   150	      if (!ScannerImported)
+   151	        throw new SourceFileErrorException("Scanner used without having been imported");
+   152	
+   153	      nextToken();
+   154	
+   155	      if (getCurrentToken() == IDENT) {
+   156	        if (level == 1) {
+   157	          if (BlockRec.searchForStatic(LexicalAnalyzer.getCurrentSpelling(), false) != null)
+   158	            throw new SourceFileErrorException("Illegal redeclaration of class variable "
+   159	                                          + LexicalAnalyzer.getCurrentSpelling());
+   160	          else new ClassVariableRec(LexicalAnalyzer.getCurrentSpelling());
+   161	        }
+   162	        else {
+   163	          if (symTab.searchForLocal(LexicalAnalyzer.getCurrentSpelling()) != null)
+   164	            throw new SourceFileErrorException("Illegal redeclaration of local variable "
+   165	                                          + LexicalAnalyzer.getCurrentSpelling());
+   166	          else new LocalVariableRec(LexicalAnalyzer.getCurrentSpelling());
+   167	        }
+   168	        nextToken();
+   169	      }
+   170	      else throw new SourceFileErrorException("Scanner name expected");
+   171	
+   172	      accept(BECOMES);
+   173	      accept(NEW);
+   174	      accept(SCANNER);
+   175	      accept(LPAREN);
+   176	      accept(SYSTEM);
+   177	      accept(DOT);
+   178	      accept(IN);
+   179	      accept(RPAREN);
+   180	      accept(SEMICOLON);
+   181	    }
+   182	    else throw new SourceFileErrorException("\"int\" or \"Scanner\" expected");
+   183	
+   184	    TJ.output.decTreeDepth();
+   185	  }
+   186	
+   187	
+   188	  private static void singleVarDecl() throws SourceFileErrorException
+   189	  {
+   190	    TJ.output.printSymbol(NTsingleVarDecl);
+   191	    TJ.output.incTreeDepth();
+   192	
+   193	    if (getCurrentToken() == IDENT) {
+   194	
+   195	      VariableRec v = null;
+   196	      String identName = LexicalAnalyzer.getCurrentSpelling();
+   197	      int dimensions = 0;
+   198	
+   199	      nextToken();
+   200	
+   201	      while (getCurrentToken() == LBRACKET) {
+   202	            dimensions++;
+   203	            nextToken();
+   204	            accept(RBRACKET);
+   205	      }
+   206	
+   207	      if (level == 1) {
+   208	        if (BlockRec.searchForStatic(identName, false) != null)
+   209	          throw new SourceFileErrorException("Illegal redeclaration of class variable "
+   210	                              + LexicalAnalyzer.getCurrentSpelling());
+   211	        else {
+   212	          int addr = staticTab.getNextOffset();
+   213	          v = new ClassVariableRec(identName, VariableRec.INT, dimensions, addr);
+   214	          staticTab.setNextOffset(addr + 1);
+   215	        }
+   216	      }
+   217	
+   218	      else {  // level > 1
+   219	        if (symTab.searchForLocal(identName) != null)
+   220	          throw new SourceFileErrorException("Illegal redeclaration of local variable "
+   221	                              + LexicalAnalyzer.getCurrentSpelling());
+   222	        else {
+   223	          int stackFrameOffset = symTab.getNextOffset();
+   224	          v = new LocalVariableRec(identName, VariableRec.INT, dimensions, stackFrameOffset);
+   225	          symTab.setNextOffset(stackFrameOffset + 1);
+   226	        }
+   227	      }
+   228	
+   229	      if (getCurrentToken() == BECOMES) {
+   230	        nextToken();
+   231	        if (level == 1)
+   232	          new PUSHSTATADDRinstr(v.offset);
+   233	        else
+   234	          new PUSHLOCADDRinstr(v.offset);
+   235	        expr3();
+   236	        new SAVETOADDRinstr();
+   237	      }
+   238	    }
+   239	    else
+   240	      throw new SourceFileErrorException("Variable name expected");
+   241	
+   242	
+   243	    TJ.output.decTreeDepth();
+   244	  }
+   245	
+   246	
+   247	  private static void mainDecl() throws SourceFileErrorException
+   248	  {
+   249	    TJ.output.printSymbol(NTmainDecl);
+   250	    TJ.output.incTreeDepth();
+   251	
+   252	    accept(PUBLIC);
+   253	    accept(STATIC);
+   254	    accept(VOID);
+   255	    accept(MAIN);
+   256	    accept(LPAREN);
+   257	    accept(STRING);
+   258	    accept(IDENT);
+   259	    accept(LBRACKET);
+   260	    accept(RBRACKET);
+   261	    accept(RPAREN);
+   262	
+   263	    MethodRec t = new MethodRec("main", MethodRec.VOID, 0);
+   264	    t.setStartAddr(Instruction.getNextCodeAddress());
+   265	
+   266	    INITSTKFRMinstr iInstr
+   267	      = new INITSTKFRMinstr(Instruction.OPERAND_NOT_YET_KNOWN);
+   268	
+   269	    compoundStmt(t, null);
+   270	
+   271	    iInstr.fixUpOperand(t.getTable().getMaxNextOffset() - TJ.FIRST_LOCALVAR_STACKFRAME_OFFSET);
+   272	
+   273	    new STOPinstr();
+   274	
+   275	    TJ.output.decTreeDepth();
+   276	  }
+   277	
+   278	
+   279	  private static void methodDecl() throws SourceFileErrorException
+   280	  {
+   281	    INITSTKFRMinstr iInstr = null;
+   282	    int dimensions = 0;
+   283	    int type;
+   284	
+   285	    TJ.output.printSymbol(NTmethodDecl);
+   286	    TJ.output.incTreeDepth();
+   287	
+   288	    accept(STATIC);
+   289	
+   290	    if (getCurrentToken() == INT) {
+   291	      type = MethodRec.INT;
+   292	      nextToken();
+   293	      while (getCurrentToken() == LBRACKET) {
+   294	            dimensions++;
+   295	            nextToken();
+   296	            accept(RBRACKET);
+   297	      }
+   298	    }
+   299	    else {
+   300	      type = MethodRec.VOID;
+   301	      accept(VOID);
+   302	    }
+   303	
+   304	    MethodRec t = null;
+   305	
+   306	    if (getCurrentToken() == IDENT) {
+   307	      t = (MethodRec) BlockRec.searchForStatic(LexicalAnalyzer.getCurrentSpelling(), true);
+   308	
+   309	      if (t == null)                             /* no call or declaration of this method has yet been seen */
+   310	        t = new MethodRec(LexicalAnalyzer.getCurrentSpelling(), type, dimensions);
+   311	
+   312	      else if (t.getCallsToBeFixedUp() != null) {/* method was previously called (but not previously declared)*/
+   313	
+   314	        t.getCallsToBeFixedUp().redirectThemToHere(type);
+   315	        t.setCallsToBeFixedUp(null);
+   316	
+   317	        t.setDimensionCount(dimensions);
+   318	
+   319	        if (t.getType() == MethodRec.NOT_KNOWN)
+   320	          t.setType(type);
+   321	        else if (t.getType() != type)
+   322	          throw new SourceFileErrorException
+   323	                      ("Declared return type inconsistent with earlier call of this method");
+   324	
+   325	        MethodRec.decUndeclaredMethodCount();
+   326	      }
+   327	
+   328	      else throw new SourceFileErrorException("Method " + LexicalAnalyzer.getCurrentSpelling()
+   329	                                                 + " has already been declared");
+   330	
+   331	      t.setStartAddr(Instruction.getNextCodeAddress());
+   332	
+   333	      iInstr = new INITSTKFRMinstr(Instruction.OPERAND_NOT_YET_KNOWN);
+   334	
+   335	      nextToken();
+   336	    }
+   337	    else
+   338	      throw new SourceFileErrorException("Method name expected");
+   339	
+   340	    accept(LPAREN);
+   341	    ParameterList parameters = parameterDeclList();
+   342	    accept(RPAREN);
+   343	
+   344	    if (t.getArgCount() == MethodRec.NOT_KNOWN)  // Method has not yet been called
+   345	      t.setArgCount(parameters.paramCount);
+   346	    else if (t.getArgCount() != parameters.paramCount)
+   347	      throw new SourceFileErrorException("Method " + t.name + " was previously called with "
+   348	                                             + t.getArgCount() + " arguments");
+   349	
+   350	    compoundStmt(t, parameters.theParams);
+   351	
+   352	    iInstr.fixUpOperand(t.getTable().getMaxNextOffset() - TJ.FIRST_LOCALVAR_STACKFRAME_OFFSET);
+   353	
+   354	    if (t.getType() == MethodRec.VOID)
+   355	      new RETURNinstr(t.getArgCount());
+   356	
+   357	    TJ.output.decTreeDepth();
+   358	  }
+   359	
+   360	
+   361	  private static ParameterList parameterDeclList() throws SourceFileErrorException
+   362	  {
+   363	    TJ.output.printSymbol(NTparameterDeclList);
+   364	    TJ.output.incTreeDepth();
+   365	
+   366	    ParameterList p = new ParameterList();
+   367	
+   368	    if (getCurrentToken() == INT) {
+   369	        parameterDecl(p);
+   370	        while (getCurrentToken() == COMMA) {
+   371	          nextToken();
+   372	          parameterDecl(p);
+   373	        }
+   374	    }
+   375	    else
+   376	      TJ.output.printSymbol(EMPTY);
+   377	
+   378	    TJ.output.decTreeDepth();
+   379	    return p;
+   380	  }
+   381	
+   382	
+   383	  private static void parameterDecl(ParameterList p) throws SourceFileErrorException
+   384	  {
+   385	    TJ.output.printSymbol(NTparameterDecl);
+   386	    TJ.output.incTreeDepth();
+   387	
+   388	    IdentList param = new IdentList();
+   389	
+   390	    accept(INT);
+   391	    if (getCurrentToken() == IDENT) {
+   392	          param.name = LexicalAnalyzer.getCurrentSpelling();
+   393	          param.next = p.theParams;
+   394	          p.theParams = param;
+   395	          p.paramCount++;
+   396	    }
+   397	    accept(IDENT);
+   398	    while (getCurrentToken() == LBRACKET) {
+   399	          param.dimensions++;
+   400	          nextToken();
+   401	          accept(RBRACKET);
+   402	    }
+   403	
+   404	    TJ.output.decTreeDepth();
+   405	  }
+   406	
+   407	
+   408	  private static void compoundStmt(MethodRec m, IdentList params) throws SourceFileErrorException
+   409	  {
+   410	    TJ.output.printSymbol(NTcompoundStmt);
+   411	    TJ.output.incTreeDepth();
+   412	
+   413	    level++;
+   414	    if (m == null)
+   415	      symTab = new CompoundStmtBlockRec();
+   416	    else {
+   417	      symTab = new MethodBlockRec(m);
+   418	
+   419	      int offset = -1;
+   420	
+   421	      for (IdentList p = params; p != null; p = p.next) {
+   422	        if (symTab.searchForLocal(p.name) != null)
+   423	          throw new SourceFileErrorException("Illegal redeclaration of parameter "
+   424	                              + p.name);
+   425	        else
+   426	          new LocalVariableRec(p.name, VariableRec.INT, p.dimensions, --offset);
+   427	      }
+   428	    }
+   429	
+   430	    accept(LBRACE);
+   431	    while (getCurrentToken() != RBRACE)
+   432	      statement();
+   433	    nextToken();
+   434	
+   435	    MethodBlockRec mb = ((CompoundStmtBlockRec) symTab).methodBlock;
+   436	    mb.setMaxNextOffset(Math.max(symTab.getNextOffset(),
+   437	                                         mb.getMaxNextOffset()));
+   438	    symTab = symTab.enclosingBlock;
+   439	
+   440	    level--;
+   441	
+   442	    TJ.output.decTreeDepth();
+   443	  }
+   444	
+   445	
+   446	  private static void statement() throws SourceFileErrorException
+   447	  {
+   448	    TJ.output.printSymbol(NTstatement);
+   449	    TJ.output.incTreeDepth();
+   450	
+   451	    switch (getCurrentToken()) {
+   452	      case SEMICOLON: nextToken(); break;
+   453	      case RETURN: nextToken();
+   454	                           if (((CompoundStmtBlockRec) symTab)
+   455	                                    .methodBlock.methodRec.getType() == MethodRec.INT)
+   456	                                 expr3();
+   457	                           new RETURNinstr(((CompoundStmtBlockRec) symTab)
+   458	                                                 .methodBlock.methodRec.getArgCount());
+   459	                           accept(SEMICOLON);
+   460	                           break;
+   461	      case INT: case SCANNER: varDecl(); break;
+   462	      case IDENT: assignmentOrInvoc(); break;
+   463	      case LBRACE: compoundStmt(null, null); break;
+   464	      case IF: ifStmt(); break;
+   465	      case WHILE: whileStmt(); break;
+   466	      case SYSTEM: outputStmt(); break;
+   467	      default: throw new SourceFileErrorException("Expected first token of a <statement>, not "
+   468	                              + getCurrentToken().symbolRepresentationForOutputFile);
+   469	    }
+   470	
+   471	    TJ.output.decTreeDepth();
+   472	  }
+   473	
+   474	
+   475	  private static void assignmentOrInvoc() throws SourceFileErrorException
+   476	  {
+   477	    TJ.output.printSymbol(NTassignmentOrInvoc);
+   478	    TJ.output.incTreeDepth();
+   479	
+   480	    String identName = LexicalAnalyzer.getCurrentSpelling();
+   481	
+   482	    accept(IDENT);
+   483	    if (getCurrentToken() != LPAREN) {
+   484	
+   485	      VariableRec t = symTab.searchForVariable(identName);
+   486	      if (t == null)
+   487	        throw new SourceFileErrorException("Undeclared variable: " + identName);
+   488	      if (t.type != VariableRec.INT)
+   489	        throw new SourceFileErrorException("int variable expected");
+   490	
+   491	      if (t instanceof LocalVariableRec) {
+   492	          /* ???????? */
+   493	      }
+   494	      else {
+   495	          /* ???????? */
+   496	      }
+   497	
+   498	      int dim = 0;
+   499	
+   500	      while (getCurrentToken() == LBRACKET) {
+   501	           new LOADFROMADDRinstr();
+   502	           nextToken();
+   503	           expr3();
+   504	           accept(RBRACKET);
+   505	           new ADDTOPTRinstr();
+   506	           dim++;
+   507	      }
+   508	
+   509	      if (dim > t.dimensionCount) throw new SourceFileErrorException("Unexpected index(es)");
+   510	
+   511	      /* ???????? */
+   512	
+   513	    }
+   514	
+   515	    else {
+   516	
+   517	      MethodRec t = lookUpCalledMethod(identName, MethodRec.NOT_KNOWN);
+   518	
+   519	      argumentList(t);
+   520	
+   521	      CALLSTATMETHODinstr cInstr = new CALLSTATMETHODinstr(t.getStartAddr());
+   522	
+   523	      if (t.getStartAddr() == Instruction.OPERAND_NOT_YET_KNOWN)
+   524	                             /* the method has not yet been declared */
+   525	        if (t.getType() == MethodRec.NOT_KNOWN)
+   526	          t.setCallsToBeFixedUp(new FixUpRec(cInstr, t.getCallsToBeFixedUp(),
+   527	                                                new NOPorDISCARDVALUEinstr()));
+   528	        else {
+   529	          t.setCallsToBeFixedUp(new FixUpRec(cInstr, t.getCallsToBeFixedUp()));
+   530	          if (t.getType() != MethodRec.VOID)
+   531	            new NOPorDISCARDVALUEinstr(false);  // generate DISCARDVALUE instruction
+   532	        }
+   533	
+   534	      else if (t.getType() != MethodRec.VOID)
+   535	        new NOPorDISCARDVALUEinstr(false);  // generate DISCARDVALUE instruction
+   536	
+   537	      accept(SEMICOLON);
+   538	    }
+   539	
+   540	    TJ.output.decTreeDepth();
+   541	  }
+   542	
+   543	
+   544	  private static void argumentList(MethodRec m) throws SourceFileErrorException
+   545	  {
+   546	     TJ.output.printSymbol(NTargumentList);
+   547	     TJ.output.incTreeDepth();
+   548	
+   549	     /* ???????? */
+   550	
+   551	     TJ.output.decTreeDepth();
+   552	  }
+   553	
+   554	
+   555	  private static void ifStmt() throws SourceFileErrorException
+   556	  {
+   557	    TJ.output.printSymbol(NTifStmt);
+   558	    TJ.output.incTreeDepth();
+   559	
+   560	    accept(IF);
+   561	    accept(LPAREN);
+   562	    expr7();
+   563	    accept(RPAREN);
+   564	
+   565	    JUMPONFALSEinstr jInstr1 =
+   566	        new JUMPONFALSEinstr(Instruction.OPERAND_NOT_YET_KNOWN);
+   567	
+   568	    statement();
+   569	
+   570	    if (getCurrentToken() == ELSE) {
+   571	      nextToken();
+   572	
+   573	      JUMPinstr jInstr2 = new JUMPinstr(Instruction.OPERAND_NOT_YET_KNOWN);
+   574	
+   575	      jInstr1.fixUpOperand(Instruction.getNextCodeAddress());
+   576	
+   577	      statement();
+   578	
+   579	      jInstr2.fixUpOperand(Instruction.getNextCodeAddress());
+   580	    }
+   581	    else
+   582	      jInstr1.fixUpOperand(Instruction.getNextCodeAddress());
+   583	
+   584	    TJ.output.decTreeDepth();
+   585	  }
+   586	
+   587	
+   588	  private static void whileStmt() throws SourceFileErrorException
+   589	  {
+   590	    TJ.output.printSymbol(NTwhileStmt);
+   591	    TJ.output.incTreeDepth();
+   592	
+   593	    /* ???????? */
+   594	
+   595	    TJ.output.decTreeDepth();
+   596	  }
+   597	
+   598	  private static void outputStmt() throws SourceFileErrorException
+   599	  {
+   600	    TJ.output.printSymbol(NToutputStmt);
+   601	    TJ.output.incTreeDepth();
+   602	
+   603	    accept(SYSTEM);
+   604	    accept(DOT);
+   605	    accept(OUT);
+   606	    accept(DOT);
+   607	
+   608	    switch (getCurrentToken()) {
+   609	
+   610	      /* ????????
+   611	
+   612	      default: throw new SourceFileErrorException("print() or println() expected, not "
+   613	                              + getCurrentToken().symbolRepresentationForOutputFile);
+   614	      */
+   615	
+   616	    }
+   617	
+   618	    TJ.output.decTreeDepth();
+   619	  }
+   620	
+   621	
+   622	  private static void printArgument() throws SourceFileErrorException
+   623	  {
+   624	    TJ.output.printSymbol(NTprintArgument);
+   625	    TJ.output.incTreeDepth();
+   626	
+   627	    /* ???????? */
+   628	
+   629	    TJ.output.decTreeDepth();
+   630	  }
+   631	
+   632	
+   633	  private static void expr7() throws SourceFileErrorException
+   634	  {
+   635	    TJ.output.printSymbol(NTexpr7);
+   636	    TJ.output.incTreeDepth();
+   637	
+   638	    /* ???????? */
+   639	
+   640	    TJ.output.decTreeDepth();
+   641	  }
+   642	
+   643	
+   644	  private static void expr6() throws SourceFileErrorException
+   645	  {
+   646	    TJ.output.printSymbol(NTexpr6);
+   647	    TJ.output.incTreeDepth();
+   648	
+   649	    /* ???????? */
+   650	
+   651	    TJ.output.decTreeDepth();
+   652	  }
+   653	
+   654	
+   655	  private static void expr5() throws SourceFileErrorException
+   656	  {
+   657	    TJ.output.printSymbol(NTexpr5);
+   658	    TJ.output.incTreeDepth();
+   659	
+   660	    /* ???????? */
+   661	
+   662	    TJ.output.decTreeDepth();
+   663	  }
+   664	
+   665	
+   666	  private static void expr4() throws SourceFileErrorException
+   667	  {
+   668	    TJ.output.printSymbol(NTexpr4);
+   669	    TJ.output.incTreeDepth();
+   670	
+   671	    /* ???????? */
+   672	
+   673	    TJ.output.decTreeDepth();
+   674	  }
+   675	
+   676	
+   677	  private static void expr3() throws SourceFileErrorException
+   678	  {
+   679	    TJ.output.printSymbol(NTexpr3);
+   680	    TJ.output.incTreeDepth();
+   681	
+   682	    /* ???????? */
+   683	
+   684	    TJ.output.decTreeDepth();
+   685	  }
+   686	
+   687	
+   688	  private static void expr2() throws SourceFileErrorException
+   689	  {
+   690	    TJ.output.printSymbol(NTexpr2);
+   691	    TJ.output.incTreeDepth();
+   692	
+   693	    expr1();
+   694	
+   695	    while (   getCurrentToken() == TIMES
+   696	           || getCurrentToken() == DIV
+   697	           || getCurrentToken() == MOD) {
+   698	
+   699	      Symbols op = getCurrentToken();
+   700	      nextToken();
+   701	
+   702	      expr1();
+   703	
+   704	      if (op == TIMES)
+   705	        new MULinstr();
+   706	      else if (op == DIV)
+   707	        new DIVinstr();
+   708	      else
+   709	        new MODinstr();
+   710	    }
+   711	
+   712	    TJ.output.decTreeDepth();
+   713	  }
+   714	
+   715	
+   716	  private static void expr1() throws SourceFileErrorException
+   717	  {
+   718	    TJ.output.printSymbol(NTexpr1);
+   719	    TJ.output.incTreeDepth();
+   720	
+   721	    switch (getCurrentToken()) {
+   722	
+   723	      /* ???????? */
+   724	
+   725	      case IDENT:
+   726	        String identName = LexicalAnalyzer.getCurrentSpelling();
+   727	        nextToken();
+   728	        if (getCurrentToken() == DOT) {
+   729	          VariableRec t = symTab.searchForVariable(identName);
+   730	          if (t == null)
+   731	            throw new SourceFileErrorException("Undeclared variable: " + identName);
+   732	          if (t.type == VariableRec.SCANNER) {
+   733	            nextToken();
+   734	            accept(NEXTINT);
+   735	            accept(LPAREN);
+   736	            accept(RPAREN);
+   737	            new READINTinstr();
+   738	          }
+   739	          else throw new SourceFileErrorException("Scanner variable expected");
+   740	        }
+   741	        else {
+   742	          int dimensionality;
+   743	
+   744	          if (getCurrentToken() == LPAREN) {
+   745	            MethodRec t = lookUpCalledMethod(identName, MethodRec.INT);
+   746	            argumentList(t);
+   747	            CALLSTATMETHODinstr cInstr = new CALLSTATMETHODinstr(t.getStartAddr());
+   748	            if (t.getStartAddr() == Instruction.OPERAND_NOT_YET_KNOWN)
+   749	                             /* the method has not yet been declared */
+   750	              t.setCallsToBeFixedUp(new FixUpRec(cInstr, t.getCallsToBeFixedUp()));
+   751	            dimensionality = t.getDimensionCount();
+   752	          }
+   753	          else {
+   754	            VariableRec t = symTab.searchForVariable(identName);
+   755	            if (t == null)
+   756	              throw new SourceFileErrorException("Undeclared variable: " + identName);
+   757	            if (t.type != VariableRec.INT)
+   758	              throw new SourceFileErrorException("Integer variable expected");
+   759	            if (t instanceof LocalVariableRec)
+   760	              new PUSHLOCADDRinstr(t.offset);
+   761	            else
+   762	              new PUSHSTATADDRinstr(t.offset);
+   763	            new LOADFROMADDRinstr();
+   764	            dimensionality = t.dimensionCount;
+   765	          }
+   766	
+   767	          while (getCurrentToken() == LBRACKET) {
+   768	            if (dimensionality-- == 0)
+   769	              throw new SourceFileErrorException("Unexpected index expression");
+   770	            nextToken();
+   771	            expr3();
+   772	            new ADDTOPTRinstr();
+   773	            new LOADFROMADDRinstr();
+   774	            accept(RBRACKET);
+   775	          }
+   776	        }
+   777	
+   778	        break;
+   779	
+   780	      case NULL:
+   781	        nextToken();
+   782	        new PUSHNUMinstr(0);
+   783	        break;
+   784	
+   785	
+   786	      default: throw new SourceFileErrorException("Malformed expression");
+   787	    }
+   788	
+   789	    TJ.output.decTreeDepth();
+   790	  }
+   791	
+   792	}
+   793	
+   794	

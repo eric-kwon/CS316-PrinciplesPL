@@ -1,0 +1,50 @@
+     1	package TJasn.symbolTable;
+     2	
+     3	import TJasn.TJ;
+     4	import TJasn.virtualMachine.OneOperandInstruction;
+     5	import TJasn.virtualMachine.Instruction;
+     6	import TJasn.virtualMachine.NOPorDISCARDVALUEinstr;
+     7	
+     8	public final class FixUpRec {
+     9	
+    10	  private final OneOperandInstruction CALLinstruction;
+    11	  private final FixUpRec next;
+    12	
+    13	  private final NOPorDISCARDVALUEinstr instrAfterCALL;  // will be null unless we still need to decide
+    14	                                                        // whether the instruction should be NOP or DISCARDVALUE
+    15	  public void redirectThemToHere(int returnTypeOfMethod)
+    16	  {
+    17	    FixUpRec p = this;
+    18	
+    19	    do {
+    20	      if (p.instrAfterCALL != null)
+    21	        if (returnTypeOfMethod == MethodRec.VOID)
+    22	          p.instrAfterCALL.setToNOP(true);
+    23	        else
+    24	          p.instrAfterCALL.setToNOP(false);
+    25	
+    26	      p.CALLinstruction.fixUpOperand(Instruction.getNextCodeAddress());
+    27	
+    28	      p = p.next;
+    29	    } while (p != null);
+    30	  }
+    31	
+    32	
+    33	  public FixUpRec(OneOperandInstruction instr, FixUpRec prev)
+    34	  {
+    35	    CALLinstruction = instr;
+    36	    next = prev;
+    37	
+    38	    instrAfterCALL = null;
+    39	  }
+    40	
+    41	  public FixUpRec(OneOperandInstruction instr, FixUpRec prev, NOPorDISCARDVALUEinstr nextInstr)
+    42	  {
+    43	    CALLinstruction = instr;
+    44	    next = prev;
+    45	
+    46	    instrAfterCALL = nextInstr;
+    47	  }
+    48	}
+    49	
+    50	

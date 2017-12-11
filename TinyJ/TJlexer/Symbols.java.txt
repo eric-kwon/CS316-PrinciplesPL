@@ -1,0 +1,112 @@
+     1	package TJlexer;
+     2	
+     3	import java.util.EnumSet;
+     4	
+     5	public enum Symbols {
+     6	
+     7	    // TinyJ reserved words
+     8	    INT("Reserved Word: int", "int"),
+     9	    VOID("Reserved Word: void", "void"),
+    10	    STATIC("Reserved Word: static", "static"),
+    11	    IF("Reserved Word: if", "if"),
+    12	    WHILE("Reserved Word: while", "while"),
+    13	    ELSE("Reserved Word: else", "else"),
+    14	    NEW("Reserved Word: new", "new"),
+    15	    OUT("Reserved Word: out", "out"),
+    16	    PRINT("Reserved Word: print", "print"),
+    17	    SYSTEM("Reserved Word: System", "System"),
+    18	    PRINTLN("Reserved Word: println", "println"),
+    19	    RETURN("Reserved Word: return", "return"),
+    20	    IN("Reserved Word: in", "in"),
+    21	    NULL("Reserved Word: null", "null"),
+    22	    NEXTINT("Reserved Word: nextInt", "nextInt"),
+    23	    MAIN("Reserved Word: main", "main"),
+    24	    JAVA("Reserved Word: java", "java"),
+    25	    UTIL("Reserved Word: util", "util"),
+    26	    CLASS("Reserved Word: class", "class"),
+    27	    STRING("Reserved Word: String", "String"),
+    28	    PUBLIC("Reserved Word: public", "public"),
+    29	    IMPORT("Reserved Word: import", "import"),
+    30	    SCANNER("Reserved Word: Scanner", "Scanner"),
+    31	    // End of TinyJ reserved words.  (See the definition of the reservedWords EnumSet below.)
+    32	
+    33	    // Other TinyJ tokens that have just one instance
+    34	    LBRACE("{"),
+    35	    RBRACE("}"),
+    36	    COMMA(","),
+    37	    SEMICOLON(";"),
+    38	    BECOMES("="),
+    39	    LPAREN("("),
+    40	    RPAREN(")"),
+    41	    LBRACKET("["),
+    42	    RBRACKET("]"),
+    43	    DOT("."),
+    44	    OR("|"),
+    45	    AND("&"),
+    46	    NOT("!"),
+    47	    EQ("=="),
+    48	    NE("!="),
+    49	    GT(">"),
+    50	    LT("<"),
+    51	    GE(">="),
+    52	    LE("<="),
+    53	    TIMES("*"),
+    54	    DIV("/"),
+    55	    MOD("%"),
+    56	    PLUS("+"),
+    57	    MINUS("-"),
+    58	
+    59	    // TinyJ tokens that have more than one instance
+    60	    IDENT("IDENTIFIER"),
+    61	    UNSIGNEDINT("UNSIGNED INTEGER LITERAL"),
+    62	    CHARSTRING("CHARACTER STRING LITERAL"),
+    63	
+    64	    // Fictitious tokens
+    65	    ENDOFINPUT("EOF"),
+    66	    BADTOKEN("?????????? BAD TOKEN"),
+    67	    EMPTY("<empty>"),
+    68	    NONE(""),
+    69	
+    70	
+    71	    // Nonterminals
+    72	    NTprogram("<program>"),
+    73	    NTimport("<importStmt>"),
+    74	    NTdataFieldDecl("<dataFieldDecl>"),
+    75	    NTvarDecl("<varDecl>"),
+    76	    NTsingleVarDecl("<singleVarDecl>"),
+    77	    NTmainDecl("<mainDecl>"),
+    78	    NTmethodDecl("<methodDecl>"),
+    79	    NTparameterDeclList("<parameterDeclList>"),
+    80	    NTparameterDecl("<parameterDecl>"),
+    81	    NTcompoundStmt("<compoundStmt>"),
+    82	    NTstatement("<statement>"),
+    83	    NTassignmentOrInvoc("<assignmentOrInvoc>"),
+    84	    NTargumentList("<argumentList>"),
+    85	    NTifStmt("<ifStmt>"),
+    86	    NTwhileStmt("<whileStmt>"),
+    87	    NToutputStmt("<outputStmt>"),
+    88	    NTprintArgument("<printArgument>"),
+    89	    NTexpr7("<expr7>"),
+    90	    NTexpr6("<expr6>"),
+    91	    NTexpr5("<expr5>"),
+    92	    NTexpr4("<expr4>"),
+    93	    NTexpr3("<expr3>"),
+    94	    NTexpr2("<expr2>"),
+    95	    NTexpr1("<expr1>");
+    96	
+    97	
+    98	  static final EnumSet<Symbols> reservedWords = EnumSet.range(INT, SCANNER);
+    99	
+   100	  public final String symbolRepresentationForOutputFile;
+   101	
+   102	  final String reservedWordSpelling;
+   103	
+   104	  Symbols(String symbolRepresentationForOutputFile, String reservedWordSpelling)
+   105	  {
+   106	    this.symbolRepresentationForOutputFile = symbolRepresentationForOutputFile;
+   107	    this.reservedWordSpelling = reservedWordSpelling;
+   108	  }
+   109	
+   110	  Symbols(String symbolRepresentationForOutputFile)
+   111	  { this(symbolRepresentationForOutputFile, null); }
+   112	}

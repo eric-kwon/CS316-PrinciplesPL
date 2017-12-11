@@ -1,0 +1,94 @@
+     1	package TJasn;
+     2	
+     3	import java.io.*;
+     4	import TJ1asn.SourceFileErrorException;
+     5	import TJlexer.Symbols;
+     6	import TJasn.symbolTable.*;
+     7	import TJasn.virtualMachine.Instruction;
+     8	
+     9	
+    10	public final class OutputFileHandler extends TJ1asn.OutputFileHandler {
+    11	
+    12	  private String idAttributes(String idName)
+    13	  {
+    14	     LocalVariableRec tLocVar
+    15	       = (LocalVariableRec) TJ.symTab.searchForLocal(idName);
+    16	
+    17	     ClassVariableRec tClassVar
+    18	       = (ClassVariableRec) BlockRec.searchForStatic(idName, false);
+    19	
+    20	     MethodRec tMethod
+    21	       = (MethodRec) BlockRec.searchForStatic(idName, true);
+    22	
+    23	     String resultString = "";
+    24	
+    25	     if (tLocVar != null || tClassVar != null || tMethod != null) {
+    26	
+    27	       boolean firstNonNull = true;
+    28	
+    29	       resultString = "  [";
+    30	
+    31	       if (tLocVar != null) {
+    32	         if (tLocVar.type == VariableRec.INT)
+    33	           resultString += "local var (stackframe offset = " + tLocVar.offset + ")";
+    34	         else
+    35	           resultString += "local Scanner";
+    36	         firstNonNull = false;
+    37	       }
+    38	
+    39	       if (tClassVar != null) {
+    40	         if (!firstNonNull)
+    41	           resultString += ",  ";
+    42	
+    43	         if (tClassVar.type == VariableRec.INT)
+    44	           resultString += "static var (address = " + tClassVar.offset + ")";
+    45	         else
+    46	           resultString += "static Scanner";
+    47	
+    48	         firstNonNull = false;
+    49	       }
+    50	
+    51	       if (tMethod != null) {
+    52	         if (!firstNonNull)
+    53	           resultString += ",  ";
+    54	
+    55	         if (tMethod.getStartAddr() == Instruction.OPERAND_NOT_YET_KNOWN)
+    56	           resultString += "method (start address not yet known)";
+    57	         else
+    58	           resultString += "method (start address = " + tMethod.getStartAddr() + ")";
+    59	       }
+    60	
+    61	       resultString += "]";
+    62	     }
+    63	     else
+    64	       resultString += "  [not in symbol table]";
+    65	
+    66	     return resultString;
+    67	  }
+    68	
+    69	
+    70	  public void outputSymbol(Symbols nodeName, Object nodeValue, PrintWriter out)
+    71	  {
+    72	      out.print(nodeName.symbolRepresentationForOutputFile);
+    73	
+    74	      if (nodeName == Symbols.IDENT) {
+    75	            String idName = nodeValue.toString();
+    76	            nodeValue = idName + idAttributes(idName);
+    77	      }
+    78	
+    79	      if (nodeValue == null)
+    80	        out.println();
+    81	      else
+    82	        out.println(": " + nodeValue);
+    83	  }
+    84	
+    85	
+    86	  OutputFileHandler(String filename) throws SourceFileErrorException
+    87	  {
+    88	     super(filename);
+    89	  }
+    90	}
+    91	
+    92	
+    93	
+    94	

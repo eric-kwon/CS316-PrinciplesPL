@@ -1,0 +1,44 @@
+     1	package TJasn.virtualMachine;
+     2	
+     3	import java.io.*;
+     4	import TJasn.TJ;
+     5	import TJasn.ParserAndTranslator;
+     6	
+     7	public abstract class Instruction {
+     8	
+     9	  private static final int NUM_OF_INSTRUCTIONS = 34;  // NOPorDISCARDVALUE counted as one instruction
+    10	  static final String demoClasses[] = new String[NUM_OF_INSTRUCTIONS];
+    11	  static int demoClassCount;
+    12	
+    13	  public static final int OPERAND_NOT_YET_KNOWN = -10000;
+    14	
+    15	  private static int nextCodeAddress = 0;
+    16	
+    17	  public static int getNextCodeAddress() {
+    18	    return nextCodeAddress;
+    19	  }
+    20	
+    21	  static final int MAX_OPNAME_LENGTH = 17;
+    22	
+    23	  int address;
+    24	  String operationName;
+    25	
+    26	  Instruction (String opName)
+    27	  {
+    28	    operationName = opName;
+    29	
+    30	    address = nextCodeAddress++;
+    31	
+    32	    TJ.generatedCode.add(this);
+    33	
+    34	    for (int i = 0; i < TJ.output.getTreeDepth(); i++)
+    35	        TJ.output.getOutFileWriter().print(" ");
+    36	
+    37	    TJ.output.getOutFileWriter().print("*** Generating:  ");
+    38	  }
+    39	
+    40	  abstract void writeInstr();
+    41	
+    42	  abstract void execute () throws VirtualMachineHaltException;
+    43	}
+    44	

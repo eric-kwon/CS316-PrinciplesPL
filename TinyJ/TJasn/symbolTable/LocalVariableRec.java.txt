@@ -1,0 +1,17 @@
+     1	package TJasn.symbolTable;
+     2	
+     3	import TJasn.TJ;
+     4	
+     5	public final class LocalVariableRec extends VariableRec {
+     6	
+     7	  public LocalVariableRec(String idName, int varType, int dimensions, int stackframeOffset)
+     8	  {
+     9	    super(idName, varType, dimensions, stackframeOffset);
+    10	  }
+    11	
+    12	  public LocalVariableRec(String idName)  // for a Scanner variable
+    13	  {
+    14	    super(idName);
+    15	  }
+    16	
+    17	}

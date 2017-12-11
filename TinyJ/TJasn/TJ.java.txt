@@ -1,0 +1,93 @@
+     1	package TJasn;
+     2	
+     3	import java.util.ArrayList;
+     4	import TJ1asn.SourceFileErrorException;
+     5	import TJasn.virtualMachine.VirtualMachineHaltException;
+     6	import TJlexer.SourceHandler;
+     7	import TJlexer.Symbols;
+     8	import TJlexer.LexicalAnalyzer;
+     9	import TJasn.virtualMachine.CodeInterpreter;
+    10	import TJasn.virtualMachine.Instruction;
+    11	import TJasn.symbolTable.BlockRec;
+    12	import java.io.PrintWriter;
+    13	
+    14	
+    15	public final class TJ {
+    16	  public static SourceHandler input;
+    17	  public static OutputFileHandler output;
+    18	
+    19	  public static final int EXPRSTACK_SIZE = 5000;
+    20	  public static final int DATA_MEMORY_SIZE = 20000;
+    21	  public static final int HEAP_START = 10000;
+    22	  public static final int HEAP_MID = 15000;
+    23	  public static final int FIRST_STATIC_ADDRESS = 0;
+    24	  public static final int FIRST_LOCALVAR_STACKFRAME_OFFSET = 1;
+    25	
+    26	  public static final int data[] = new int [DATA_MEMORY_SIZE]; /* space for static variables,   */
+    27	                                                               /* string literals, stackframes, */
+    28	                                                               /* and the heap                  */
+    29	
+    30	  public static final ArrayList<Instruction> generatedCode = new ArrayList<Instruction>(500);
+    31	
+    32	  public static final BlockRec staticTab
+    33	                                = new BlockRec(1);  /* Subtable of Symbol Table that holds     */
+    34	                                                    /* records for method and static variables */
+    35	
+    36	  public static BlockRec symTab = staticTab;     /* Symbol Table */
+    37	
+    38	
+    39	  public static void main(String args[])
+    40	  {
+    41	     final String inputFileName = args.length == 0 ? null : args[0];
+    42	     final String outputFileName = args.length <= 1 ? null : args[1];
+    43	
+    44	     try {
+    45	       output = new OutputFileHandler(outputFileName);
+    46	       input = new SourceHandler(inputFileName);
+    47	
+    48	       LexicalAnalyzer.setIO(input, output);
+    49	       LexicalAnalyzer.setStringTable(data);
+    50	       LexicalAnalyzer.nextToken();
+    51	
+    52	       ParserAndTranslator.program();
+    53	
+    54	       if (LexicalAnalyzer.getCurrentToken() != Symbols.ENDOFINPUT)
+    55	         throw new SourceFileErrorException("Token encountered after end of program");
+    56	
+    57	       staticTab.setNextOffset(LexicalAnalyzer.getEndOfString()+1);
+    58	
+    59	       try {
+    60	         CodeInterpreter.start();
+    61	       } catch (VirtualMachineHaltException e) {
+    62	           System.out.println("\n****** " + e.errorMessage);
+    63	       } finally {
+    64	           System.out.println();
+    65	           if (CodeInterpreter.getDumpRequested())
+    66	             CodeInterpreter.dump();
+    67	       }
+    68	
+    69	     } catch (SourceFileErrorException theError) {
+    70	
+    71	         System.out.println("\n\n\nERROR!  " + theError.errorMessage);
+    72	         if (input != null) {
+    73	           if (input.getCurrentChar() != SourceHandler.eofDesignator)
+    74	             System.out.println("input.currentChar = '"
+    75	                                    + (char) input.getCurrentChar() + '\'');
+    76	           else
+    77	             System.out.println("input.currentChar = EOF");
+    78	
+    79	           System.out.print("LexicalAnalyzer.currentToken = ");
+    80	           TJ.output.outputSymbol(LexicalAnalyzer.getCurrentToken(), LexicalAnalyzer.getTokenValue(),
+    81	                                    new PrintWriter(System.out, true));
+    82	           System.out.println();
+    83	         }
+    84	
+    85	     } finally {
+    86	         if (output != null)
+    87	           output.getOutFileWriter().close();
+    88	     }
+    89	  }
+    90	
+    91	}
+    92	
+    93	
