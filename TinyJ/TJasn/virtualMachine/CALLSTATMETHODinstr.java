@@ -7,7 +7,8 @@ public class CALLSTATMETHODinstr extends OneOperandInstruction {
 
   void execute ()
   {
-    /* ???????? */
+    TJ.data[ASP++ - POINTERTAG] = PC;
+    PC = this.operand;
   }
 
   public CALLSTATMETHODinstr (int startAddr)

@@ -8,7 +8,9 @@ public class INITSTKFRMinstr extends OneOperandInstruction {
 
   void execute () throws VirtualMachineHaltException
   {
-     /* ???????? */
+    TJ.data[ASP++ - POINTERTAG] = FP;
+    FP = ASP-1;
+    ASP += this.operand;
   }
 
   public INITSTKFRMinstr (int locationsNeededForLocalVars)

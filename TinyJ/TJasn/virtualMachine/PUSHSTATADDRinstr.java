@@ -7,7 +7,7 @@ public class PUSHSTATADDRinstr extends OneOperandInstruction {
 
   void execute ()
   {
-    /* ???????? */
+    EXPRSTACK[ESP++] = this.operand + POINTERTAG;
   }
 
   public PUSHSTATADDRinstr (int offset)

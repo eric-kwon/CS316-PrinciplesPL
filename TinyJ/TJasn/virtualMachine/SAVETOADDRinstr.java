@@ -8,7 +8,8 @@ public class SAVETOADDRinstr extends ZeroOperandInstruction {
 
   void execute () throws VirtualMachineHaltException
   {
-     /* ???????? */
+    TJ.data[EXPRSTACK[ESP-2] - POINTERTAG] = EXPRSTACK[ESP-1];
+    ESP -= 2;
   }
 
   public SAVETOADDRinstr ()

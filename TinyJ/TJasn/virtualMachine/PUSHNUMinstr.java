@@ -8,7 +8,7 @@ public class PUSHNUMinstr extends OneOperandInstruction {
 
   void execute ()
   {
-     /* ???????? */
+     EXPRSTACK[ESP++] = this.operand;
   }
 
   public PUSHNUMinstr (int value) throws SourceFileErrorException

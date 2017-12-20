@@ -6,7 +6,7 @@ public class JUMPinstr extends OneOperandInstruction {
 
   void execute ()
   {
-    /* ???????? */
+    PC = this.operand;
   }
 
   public JUMPinstr (int address)

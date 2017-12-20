@@ -8,7 +8,7 @@ public class PASSPARAMinstr extends ZeroOperandInstruction {
 
   void execute () throws VirtualMachineHaltException
   {
-      /* ???????? */
+    TJ.data[ASP++ - POINTERTAG] = EXPRSTACK[--ESP];
   }
 
   public PASSPARAMinstr ()

@@ -8,7 +8,7 @@ public class SUBinstr extends ZeroOperandInstruction {
 
   void execute () throws VirtualMachineHaltException
   {
-    /* ???????? */
+    EXPRSTACK[--ESP-1] -= EXPRSTACK[ESP];
   }
 
   public SUBinstr ()
